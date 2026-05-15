@@ -1,0 +1,1076 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>One-liner</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.24.7/babel.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#000;--bg2:#0d0d0d;--bg3:#1a1a1a;--bg4:#242424;--bg5:#2e2e2e;
+  --border:rgba(255,255,255,.08);--border2:rgba(255,255,255,.14);
+  --text:#fff;--text2:rgba(255,255,255,.7);--text3:rgba(255,255,255,.38);
+  --blue:#4d8eff;--blue-bg:rgba(77,142,255,.12);--blue-glow:rgba(77,142,255,.3);
+  --green:#25d497;--green-bg:rgba(37,212,151,.1);
+  --amber:#ffb830;--amber-bg:rgba(255,184,48,.1);
+  --red:#ff4d6a;--red-bg:rgba(255,77,106,.1);
+  --purple:#a78bfa;--purple-bg:rgba(167,139,250,.1);
+  --pink:#ff6eb4;--cyan:#22d3ee;
+  --grad-blue:linear-gradient(135deg,#4d8eff,#a78bfa);
+  --grad-green:linear-gradient(135deg,#25d497,#22d3ee);
+  --grad-warm:linear-gradient(135deg,#ffb830,#ff4d6a);
+  --grad-hero:linear-gradient(135deg,#4d8eff 0%,#a78bfa 50%,#ff6eb4 100%);
+  --safe-b:env(safe-area-inset-bottom,0px);
+  --nav-h:56px;--font:'Inter',system-ui,sans-serif;
+  --r:12px;--r-lg:18px;--r-xl:24px;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+
+html,body{height:100%;overflow:hidden;background:#000}
+body{font-family:var(--font);color:var(--text);-webkit-font-smoothing:antialiased}
+#root{height:100%;display:flex;flex-direction:column;max-width:430px;margin:0 auto;background:var(--bg);overflow:hidden;position:relative}
+
+.screen{flex:1;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;
+  padding-bottom:calc(var(--nav-h) + var(--safe-b) + 16px);
+  -webkit-overflow-scrolling:touch;scrollbar-width:none}
+.screen::-webkit-scrollbar{display:none}
+.screen.raw{padding-bottom:0;overflow:hidden}
+
+/* ── BOTTOM NAV ── */
+.navbar{
+  height:calc(var(--nav-h) + var(--safe-b));
+  padding-bottom:var(--safe-b);
+  display:flex;align-items:center;
+  background:rgba(0,0,0,.9);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+  border-top:1px solid var(--border);
+  flex-shrink:0;z-index:50;
+}
+.nav-btn{
+  flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;
+  padding:8px 4px;cursor:pointer;border:none;background:none;
+  color:var(--text3);transition:color .2s;font-family:var(--font);
+}
+.nav-btn.active{color:var(--text)}
+.nav-lbl{font-size:10px;font-weight:600;letter-spacing:.01em}
+.nav-pip{width:4px;height:4px;border-radius:50%;background:var(--blue);
+  opacity:0;transform:scale(0);transition:all .2s;margin-top:1px}
+.nav-btn.active .nav-pip{opacity:1;transform:scale(1)}
+
+/* ── TOP BAR ── */
+.topbar{position:sticky;top:0;z-index:30;
+  padding:14px 20px 12px;
+  background:rgba(0,0,0,.75);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border);
+}
+.topbar-row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.topbar-title{font-size:20px;font-weight:800;letter-spacing:-.4px}
+
+/* ── REELS ── */
+.reels-wrap{height:100%;overflow-y:scroll;scroll-snap-type:y mandatory;
+  -webkit-overflow-scrolling:touch;scrollbar-width:none;position:relative}
+.reels-wrap::-webkit-scrollbar{display:none}
+.reel{
+  height:100svh;scroll-snap-align:start;scroll-snap-stop:always;
+  position:relative;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;
+  flex-shrink:0;
+}
+.reel-bg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+.reel-vignette{position:absolute;inset:0;
+  background:linear-gradient(to top,rgba(0,0,0,.93) 0%,rgba(0,0,0,.25) 40%,rgba(0,0,0,.08) 65%,rgba(0,0,0,.45) 100%);
+  z-index:1}
+.reel-progress{position:absolute;top:52px;left:12px;right:12px;z-index:5;
+  display:flex;gap:3px}
+.reel-prog-seg{height:2px;flex:1;background:rgba(255,255,255,.2);border-radius:1px;overflow:hidden}
+.reel-prog-fill{height:100%;background:#fff;border-radius:1px}
+.reel-platform{position:absolute;top:64px;right:14px;z-index:4;
+  padding:4px 9px;border-radius:6px;font-size:10px;font-weight:800;letter-spacing:.05em;
+  backdrop-filter:blur(8px)}
+.reel-body{position:relative;z-index:2;display:flex;gap:10px;
+  align-items:flex-end;padding:0 14px 14px}
+.reel-info{flex:1;min-width:0}
+.reel-author-row{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.reel-ava{width:34px;height:34px;border-radius:50%;background:var(--grad-blue);
+  border:2px solid rgba(255,255,255,.6);
+  display:flex;align-items:center;justify-content:center;
+  font-weight:800;font-size:13px;flex-shrink:0}
+.reel-author-name{font-size:14px;font-weight:700}
+.reel-follow-btn{background:none;border:1.5px solid rgba(255,255,255,.75);color:#fff;
+  font-size:11px;font-weight:700;padding:3px 9px;border-radius:6px;
+  cursor:pointer;font-family:var(--font);flex-shrink:0}
+.reel-task-chip{display:inline-flex;align-items:center;gap:4px;
+  background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);
+  backdrop-filter:blur(6px);border-radius:7px;
+  padding:5px 9px;font-size:11px;color:rgba(255,255,255,.8);margin-bottom:8px}
+.reel-views{font-size:32px;font-weight:900;letter-spacing:-1px;line-height:1}
+.reel-views-lbl{font-size:11px;color:rgba(255,255,255,.5);margin-top:2px}
+.reel-url{font-size:11px;color:rgba(255,255,255,.38);margin-top:8px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px;display:block;text-decoration:none}
+.reel-earn{display:inline-flex;align-items:center;gap:5px;margin-top:10px;
+  background:rgba(37,212,151,.15);border:1px solid rgba(37,212,151,.3);
+  border-radius:8px;padding:5px 10px;font-size:13px;font-weight:800;color:var(--green)}
+.reel-actions{display:flex;flex-direction:column;align-items:center;gap:14px;padding-bottom:6px}
+.reel-action{display:flex;flex-direction:column;align-items:center;gap:4px;
+  background:none;border:none;color:#fff;cursor:pointer;font-family:var(--font)}
+.reel-action-icon{width:44px;height:44px;border-radius:50%;
+  background:rgba(255,255,255,.12);backdrop-filter:blur(6px);
+  border:1px solid rgba(255,255,255,.1);
+  display:flex;align-items:center;justify-content:center}
+.reel-action-lbl{font-size:10px;font-weight:600;color:rgba(255,255,255,.65)}
+.reels-logo{position:absolute;top:14px;left:14px;z-index:5;
+  font-size:18px;font-weight:900;letter-spacing:-.4px;
+  background:var(--grad-hero);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+
+/* ── TASKS ── */
+.view-toggle{display:flex;background:var(--bg3);border:1px solid var(--border);
+  border-radius:10px;padding:3px;gap:2px}
+.vbtn{padding:6px 10px;border-radius:8px;border:none;background:none;cursor:pointer;
+  color:var(--text3);transition:all .2s;font-family:var(--font);
+  display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600}
+.vbtn.active{background:var(--bg5);color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.5)}
+.sort-row{display:flex;gap:7px;overflow-x:auto;padding:10px 16px;scrollbar-width:none}
+.sort-row::-webkit-scrollbar{display:none}
+.chip{flex-shrink:0;padding:6px 13px;border-radius:20px;font-size:12px;font-weight:600;
+  border:1px solid var(--border);background:var(--bg3);color:var(--text2);
+  cursor:pointer;transition:all .2s;font-family:var(--font);white-space:nowrap}
+.chip.on{background:var(--blue-bg);color:var(--blue);border-color:rgba(77,142,255,.3)}
+
+.task-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:10px 14px}
+.tcard{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r-lg);
+  overflow:hidden;cursor:pointer;transition:transform .15s;display:flex;flex-direction:column}
+.tcard:active{transform:scale(.96)}
+.tcard-top{height:86px;display:flex;align-items:center;justify-content:center;position:relative;flex-shrink:0}
+.tcard-emoji{font-size:38px}
+.tcard-body{padding:11px;flex:1;display:flex;flex-direction:column;gap:5px}
+.tcard-title{font-size:12px;font-weight:700;line-height:1.3;letter-spacing:-.1px}
+.tcard-cpm{font-size:19px;font-weight:900;letter-spacing:-.5px;
+  background:var(--grad-green);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.tcard-meta{font-size:10px;color:var(--text3);font-weight:500}
+.prog{height:3px;border-radius:2px;background:rgba(255,255,255,.07);overflow:hidden;margin:2px 0}
+.prog-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--blue),var(--purple));transition:width .4s}
+
+.tlist{display:flex;flex-direction:column;gap:8px;padding:8px 14px 8px}
+.trow{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);
+  padding:14px;cursor:pointer;display:flex;align-items:center;gap:12px;
+  animation:fadeUp .2s ease both;transition:background .15s}
+.trow:active{background:var(--bg3)}
+.trow-ico{width:44px;height:44px;border-radius:12px;background:var(--bg4);
+  display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.trow-info{flex:1;min-width:0}
+.trow-title{font-size:14px;font-weight:700;letter-spacing:-.2px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:4px}
+.trow-sub{font-size:11px;color:var(--text3);display:flex;align-items:center;gap:6px}
+.trow-right{text-align:right;flex-shrink:0}
+.trow-cpm{font-size:17px;font-weight:900;background:var(--grad-green);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-.3px}
+.trow-max{font-size:10px;color:var(--text3);margin-top:2px}
+
+/* ── SHEET ── */
+.sheet-back{position:fixed;inset:0;background:rgba(0,0,0,.65);
+  backdrop-filter:blur(6px);z-index:100;display:flex;flex-direction:column;justify-content:flex-end}
+.sheet{background:var(--bg2);border-radius:22px 22px 0 0;border:1px solid var(--border2);
+  border-bottom:none;max-height:88vh;overflow-y:auto;
+  animation:slideUp .28s cubic-bezier(.32,0,.67,0) both;
+  padding-bottom:calc(24px + var(--safe-b));scrollbar-width:none}
+.sheet::-webkit-scrollbar{display:none}
+.sheet-handle{width:34px;height:4px;background:var(--bg5);border-radius:2px;margin:12px auto 2px}
+.sheet-hd{padding:6px 20px 16px;border-bottom:1px solid var(--border)}
+.sheet-bd{padding:18px 20px}
+.sbox-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.sbox{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:12px}
+.sbox-lbl{font-size:10px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px}
+.sbox-val{font-size:20px;font-weight:800;letter-spacing:-.3px}
+
+/* ── DASHBOARD ── */
+.profile-hd{padding:24px 20px 20px;text-align:center;
+  background:linear-gradient(180deg,rgba(77,142,255,.07) 0%,transparent 100%)}
+.profile-ava{width:74px;height:74px;border-radius:22px;background:var(--grad-blue);
+  display:flex;align-items:center;justify-content:center;
+  font-size:30px;font-weight:900;color:#fff;margin:0 auto 12px;
+  box-shadow:0 10px 28px rgba(77,142,255,.35)}
+.profile-name{font-size:20px;font-weight:800;letter-spacing:-.4px}
+.profile-role{font-size:12px;color:var(--text3);margin-top:3px}
+.balance-card{margin:0 14px 14px;border-radius:var(--r-lg);
+  background:linear-gradient(135deg,rgba(37,212,151,.1),rgba(34,211,238,.05));
+  border:1px solid rgba(37,212,151,.18);padding:16px 18px;
+  display:flex;align-items:center;justify-content:space-between}
+.balance-amt{font-size:34px;font-weight:900;letter-spacing:-.8px;
+  background:var(--grad-green);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.balance-lbl{font-size:11px;color:var(--text3);margin-top:2px}
+.mini-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0 14px 14px}
+.mstat{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:12px;text-align:center}
+.mstat-val{font-size:18px;font-weight:800;letter-spacing:-.3px}
+.mstat-lbl{font-size:10px;color:var(--text3);font-weight:500;margin-top:3px}
+.sec{margin:0 14px 14px}
+.sec-lbl{font-size:13px;font-weight:700;color:var(--text2);margin-bottom:9px;letter-spacing:-.1px}
+.vitem{display:flex;align-items:center;gap:11px;padding:12px;
+  background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);margin-bottom:7px}
+.vitem-thumb{width:50px;height:50px;border-radius:10px;background:var(--bg4);
+  display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.vitem-info{flex:1;min-width:0}
+.vitem-title{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:3px}
+.vitem-meta{font-size:11px;color:var(--text3);display:flex;align-items:center;gap:5px}
+.vitem-earn{font-size:14px;font-weight:800;color:var(--green);flex-shrink:0}
+
+/* ── AUTH ── */
+.auth-scr{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:32px 28px;
+  background:radial-gradient(ellipse 100% 50% at 50% 0%,rgba(77,142,255,.09),transparent)}
+.auth-ico{width:64px;height:64px;border-radius:20px;background:var(--grad-blue);
+  display:flex;align-items:center;justify-content:center;font-weight:900;font-size:28px;
+  margin:0 auto 18px;box-shadow:0 12px 32px rgba(77,142,255,.38)}
+.auth-title{font-size:28px;font-weight:900;text-align:center;letter-spacing:-.6px;margin-bottom:6px;
+  background:var(--grad-hero);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.auth-sub{font-size:13px;color:var(--text3);text-align:center;margin-bottom:32px;line-height:1.6}
+.auth-form{width:100%;max-width:360px}
+.auth-tabs{display:flex;background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:4px;gap:3px;margin-bottom:22px}
+.auth-tab{flex:1;padding:9px;border-radius:9px;text-align:center;font-size:14px;font-weight:600;
+  cursor:pointer;border:none;background:none;color:var(--text3);transition:all .2s;font-family:var(--font)}
+.auth-tab.on{background:var(--bg5);color:var(--text)}
+
+/* ── ADMIN ── */
+.adm-hd{padding:14px 18px 12px;background:var(--bg2);border-bottom:1px solid var(--border)}
+.adm-title{font-size:18px;font-weight:800;letter-spacing:-.3px}
+.adm-tabs{display:flex;overflow-x:auto;padding:0 14px;gap:2px;
+  border-bottom:1px solid var(--border);background:var(--bg2);scrollbar-width:none}
+.adm-tabs::-webkit-scrollbar{display:none}
+.adm-tab{flex-shrink:0;padding:10px 12px;font-size:12px;font-weight:600;
+  color:var(--text3);border:none;background:none;cursor:pointer;font-family:var(--font);
+  border-bottom:2px solid transparent;transition:all .2s;white-space:nowrap}
+.adm-tab.on{color:var(--blue);border-bottom-color:var(--blue)}
+.adm-body{padding:14px}
+.acard{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;margin-bottom:10px}
+.arow{padding:13px 14px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:10px}
+.arow:last-child{border-bottom:none}
+.arow-info{flex:1;min-width:0}
+.arow-title{font-size:14px;font-weight:600;margin-bottom:3px;letter-spacing:-.1px}
+.arow-sub{font-size:11px;color:var(--text3);display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.arow-rt{display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0}
+.athumb{width:42px;height:42px;border-radius:10px;background:var(--bg4);
+  flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:18px}
+.astat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.astat{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px}
+.astat-v{font-size:22px;font-weight:800;letter-spacing:-.4px}
+.astat-l{font-size:11px;color:var(--text3);margin-top:2px}
+
+/* ── BADGES ── */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 7px;border-radius:6px;font-size:11px;font-weight:600}
+.badge::before{content:'';width:5px;height:5px;border-radius:50%}
+.badge-pending,.badge-paused{background:var(--amber-bg);color:var(--amber);border:1px solid rgba(255,184,48,.2)}.badge-pending::before,.badge-paused::before{background:var(--amber)}
+.badge-approved,.badge-tracking,.badge-active{background:var(--green-bg);color:var(--green);border:1px solid rgba(37,212,151,.2)}.badge-approved::before,.badge-tracking::before,.badge-active::before{background:var(--green)}
+.badge-rejected,.badge-banned,.badge-closed{background:var(--red-bg);color:var(--red);border:1px solid rgba(255,77,106,.2)}.badge-rejected::before,.badge-banned::before,.badge-closed::before{background:var(--red)}
+.badge-completed,.badge-paid,.badge-draft{background:var(--blue-bg);color:var(--blue);border:1px solid rgba(77,142,255,.2)}.badge-completed::before,.badge-paid::before,.badge-draft::before{background:var(--blue)}
+.badge-youtube{background:rgba(255,0,0,.08);color:#ff4d4d;border:1px solid rgba(255,77,77,.15)}.badge-youtube::before{background:#ff4d4d}
+.badge-tiktok{background:rgba(105,201,208,.08);color:#69c9d0;border:1px solid rgba(105,201,208,.15)}.badge-tiktok::before{background:#69c9d0}
+.badge-instagram{background:rgba(225,48,108,.08);color:#e1306c;border:1px solid rgba(225,48,108,.15)}.badge-instagram::before{background:#e1306c}
+.badge-admin{background:var(--amber-bg);color:var(--amber);border:1px solid rgba(255,184,48,.2)}.badge-admin::before{background:var(--amber)}
+.badge-moderator{background:var(--purple-bg);color:var(--purple);border:1px solid rgba(167,139,250,.2)}.badge-moderator::before{background:var(--purple)}
+.badge-creator,.badge-finance{background:var(--blue-bg);color:var(--blue);border:1px solid rgba(77,142,255,.2)}.badge-creator::before,.badge-finance::before{background:var(--blue)}
+
+/* ── BTN ── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  padding:10px 16px;border-radius:var(--r);font-size:14px;font-weight:700;
+  cursor:pointer;border:none;transition:all .15s;font-family:var(--font);white-space:nowrap}
+.btn-p{background:var(--grad-blue);color:#fff;box-shadow:0 4px 14px rgba(77,142,255,.28)}
+.btn-p:active{opacity:.82;transform:scale(.97)}
+.btn-s{background:var(--bg4);color:var(--text);border:1px solid var(--border2)}
+.btn-s:active{background:var(--bg5)}
+.btn-ok{background:var(--green-bg);color:var(--green);border:1px solid rgba(37,212,151,.25)}
+.btn-danger{background:var(--red-bg);color:var(--red);border:1px solid rgba(255,77,106,.25)}
+.btn-ghost{background:rgba(255,255,255,.06);color:var(--text2);border:1px solid var(--border)}
+.btn-sm{padding:7px 11px;font-size:12px;border-radius:9px}
+.btn:disabled{opacity:.32;cursor:not-allowed}
+.full{width:100%}
+.row-btns{display:flex;gap:8px}
+
+/* ── FORM ── */
+.fg{margin-bottom:14px}
+.fg label{display:block;font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px}
+input,textarea,select{width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);
+  padding:11px 13px;font-size:15px;color:var(--text);font-family:var(--font);
+  outline:none;transition:border .2s;-webkit-appearance:none}
+input:focus,textarea:focus,select:focus{border-color:var(--blue)}
+textarea{resize:vertical;min-height:80px;line-height:1.5}
+select option{background:var(--bg2)}
+::placeholder{color:rgba(255,255,255,.18)}
+
+/* ── ALERTS ── */
+.alert{padding:11px 13px;border-radius:10px;font-size:13px;margin-bottom:12px}
+.alert-err{background:var(--red-bg);color:var(--red);border:1px solid rgba(255,77,106,.2)}
+.alert-ok{background:var(--green-bg);color:var(--green);border:1px solid rgba(37,212,151,.2)}
+.alert-info{background:var(--blue-bg);color:var(--blue);border:1px solid rgba(77,142,255,.2)}
+
+/* ── MISC ── */
+.spinner{display:inline-block;width:18px;height:18px;border:2px solid rgba(255,255,255,.1);border-top-color:var(--blue);border-radius:50%;animation:spin .5s linear infinite}
+.loading{height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;color:var(--text3);font-size:13px}
+.empty{text-align:center;padding:48px 20px;color:var(--text3)}
+.empty-ico{font-size:44px;margin-bottom:10px;display:block}
+.empty-t{font-size:16px;font-weight:700;color:var(--text2);margin-bottom:5px}
+.empty-s{font-size:13px}
+.g-blue{background:var(--grad-blue);-webkit-background-clip:text;-webkit-text-fill-color:transparent;display:inline-block}
+.g-green{background:var(--grad-green);-webkit-background-clip:text;-webkit-text-fill-color:transparent;display:inline-block}
+.score-bar{height:3px;border-radius:2px;background:rgba(255,255,255,.07);overflow:hidden;margin-top:4px}
+.score-fill{height:100%;border-radius:2px}
+.s-lo{background:var(--green)}.s-mi{background:var(--amber)}.s-hi{background:var(--red)}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useCallback, createContext, useContext } = React;
+
+const API = window.location.hostname==='localhost' ? 'http://localhost:5000/api' : '/api';
+const api = {
+  token:null,
+  async req(m,p,b){
+    const r=await fetch(`${API}${p}`,{method:m,headers:{'Content-Type':'application/json',...(this.token?{Authorization:`Bearer ${this.token}`}:{})}, ...(b?{body:JSON.stringify(b)}:{})});
+    const d=await r.json().catch(()=>({}));
+    if(!r.ok) throw new Error(d.error||`HTTP ${r.status}`);
+    return d;
+  },
+  get:p=>api.req('GET',p),
+  post:(p,b)=>api.req('POST',p,b),
+  patch:(p,b)=>api.req('PATCH',p,b),
+};
+
+const AuthCtx=createContext(null);
+const NavCtx=createContext(null);
+const useAuth=()=>useContext(AuthCtx);
+const useNav=()=>useContext(NavCtx);
+
+const fmt={
+  num:n=>n>=1e6?(n/1e6).toFixed(1)+'M':n>=1e3?(n/1e3).toFixed(0)+'K':String(n||0),
+  usd:n=>`$${(n||0).toFixed(2)}`,
+  date:s=>s?new Date(s).toLocaleDateString('ru-RU',{day:'2-digit',month:'short'}):'—',
+  pl:p=>({youtube:'YouTube',tiktok:'TikTok',instagram:'Instagram'}[p]||p),
+};
+
+function Badge({status,text}){return <span className={`badge badge-${status}`}>{text||status}</span>;}
+
+function useData(fn,deps=[]){
+  const [data,setData]=useState(null);
+  const [loading,setLoading]=useState(true);
+  const load=useCallback(async()=>{setLoading(true);try{setData(await fn());}catch{}finally{setLoading(false);}},deps);
+  useEffect(()=>{load();},[load]);
+  return {data,loading,reload:load};
+}
+
+// ── SVG icons ──────────────────────────────────────────────────────────────
+const Ico=({n,s=20})=>{
+  const d={
+    home:<><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></>,
+    grid:<><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></>,
+    play:<><rect x="2" y="2" width="20" height="20" rx="5"/><polygon points="10 8 16 12 10 16 10 8"/></>,
+    user:<><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></>,
+    shield:<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>,
+    list:<><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3" y2="6"/><line x1="3" y1="12" x2="3" y2="12"/><line x1="3" y1="18" x2="3" y2="18"/></>,
+    heart:<path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>,
+    share:<><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></>,
+    msg:<path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>,
+    plus:<><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></>,
+    check:<polyline points="20 6 9 11 4 16"/>,
+    x:<><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></>,
+    dollar:<><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></>,
+    chart:<><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></>,
+    ban:<><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></>,
+    refresh:<><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></>,
+    logout:<><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></>,
+    link:<><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></>,
+  };
+  return <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{d[n]||<circle cx="12" cy="12" r="10"/>}</svg>;
+};
+
+// ── Bottom Sheet ────────────────────────────────────────────────────────────
+function Sheet({onClose,children}){
+  return (
+    <div className="sheet-back" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="sheet">
+        <div className="sheet-handle"/>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+// ── Auth ────────────────────────────────────────────────────────────────────
+function Auth({onAuth}){
+  const [tab,setTab]=useState('login');
+  const [form,setForm]=useState({email:'',password:'',name:''});
+  const [err,setErr]=useState('');
+  const [loading,setLoading]=useState(false);
+  const f=k=>e=>setForm(p=>({...p,[k]:e.target.value}));
+  const go=async e=>{
+    e.preventDefault();setErr('');setLoading(true);
+    try{const d=await api.post(tab==='login'?'/auth/login':'/auth/register',form);api.token=d.token;localStorage.setItem('ol_t',d.token);onAuth(d.user);}
+    catch(e){setErr(e.message);}finally{setLoading(false);}
+  };
+  return(
+    <div className="auth-scr">
+      <div className="auth-ico">O</div>
+      <div className="auth-title">One-liner</div>
+      <div className="auth-sub">Зарабатывай на своих видео</div>
+      <div className="auth-form">
+        <div className="auth-tabs">
+          <button className={`auth-tab ${tab==='login'?'on':''}`} onClick={()=>setTab('login')}>Войти</button>
+          <button className={`auth-tab ${tab==='reg'?'on':''}`} onClick={()=>setTab('reg')}>Регистрация</button>
+        </div>
+        {err&&<div className="alert alert-err">⚠ {err}</div>}
+        <form onSubmit={go}>
+          {tab==='reg'&&<div className="fg"><label>Имя</label><input placeholder="Ваше имя" value={form.name} onChange={f('name')} required/></div>}
+          <div className="fg"><label>Email</label><input type="email" placeholder="you@example.com" value={form.email} onChange={f('email')} required/></div>
+          <div className="fg"><label>Пароль</label><input type="password" placeholder="••••••••" value={form.password} onChange={f('password')} required/></div>
+          <button className="btn btn-p full" disabled={loading}>{loading?<span className="spinner"/>:tab==='login'?'Войти':'Создать аккаунт'}</button>
+        </form>
+        <div className="alert alert-info" style={{marginTop:16,fontSize:12,lineHeight:1.7}}>
+          <strong>Demo:</strong> admin@oneliner.io / admin123<br/>creator1@example.com / pass123
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Reels Feed ──────────────────────────────────────────────────────────────
+const BG=[['#0c0a1e','#1a1040'],['#071a0a','#0d280d'],['#18080a','#280d10'],['#08081a','#0d0d2a'],['#180f06','#28200d'],['#06171a','#0d2820']];
+const EMOJIS=['🎬','🎤','📱','🌟','🔥','🎯','✨','💡'];
+
+function Reel({s,i,total}){
+  const bg=BG[i%BG.length];
+  const em=EMOJIS[i%EMOJIS.length];
+  const pcols={youtube:'#ff4d4d',tiktok:'#69c9d0',instagram:'#e1306c'};
+  const pc=pcols[s.platform]||'#fff';
+  const likes=fmt.num(Math.floor(s.views_count*.035));
+  const cmts=fmt.num(Math.floor(s.views_count*.007));
+  return(
+    <div className="reel">
+      <div className="reel-bg" style={{background:`linear-gradient(135deg,${bg[0]},${bg[1]})`}}>
+        <div style={{fontSize:140,opacity:.12,userSelect:'none',transform:'rotate(-8deg)'}}>{em}</div>
+      </div>
+      <div className="reel-vignette"/>
+      {/* Logo */}
+      <div className="reels-logo">One-liner</div>
+      {/* Platform tag */}
+      <div className="reel-platform" style={{background:`rgba(${s.platform==='youtube'?'255,77,77':s.platform==='tiktok'?'105,201,208':'225,48,108'},.14)`,color:pc,border:`1px solid ${pc}28`}}>
+        {fmt.pl(s.platform).toUpperCase()}
+      </div>
+      {/* Progress */}
+      <div className="reel-progress">
+        {Array.from({length:Math.min(total,6)}).map((_,j)=>(
+          <div key={j} className="reel-prog-seg">
+            <div className="reel-prog-fill" style={{width:j<i?'100%':j===i?'55%':'0%'}}/>
+          </div>
+        ))}
+      </div>
+      {/* Content */}
+      <div className="reel-body">
+        <div className="reel-info">
+          <div className="reel-author-row">
+            <div className="reel-ava">{(s.author_name||'A')[0]}</div>
+            <div className="reel-author-name">{s.author_name}</div>
+            <button className="reel-follow-btn">+ Follow</button>
+          </div>
+          <div className="reel-task-chip">🎯 {s.task_title}</div>
+          <div className="reel-views">{fmt.num(s.views_count)}</div>
+          <div className="reel-views-lbl">просмотров</div>
+          <a href={s.video_url} target="_blank" className="reel-url">{s.video_url}</a>
+          <div className="reel-earn"><Ico n="dollar" s={13}/> {fmt.usd(s.payout_amount)}</div>
+        </div>
+        <div className="reel-actions">
+          {[{n:'heart',l:likes},{n:'msg',l:cmts},{n:'share',l:'Поделиться'}].map(a=>(
+            <button key={a.n} className="reel-action">
+              <div className="reel-action-icon"><Ico n={a.n} s={20}/></div>
+              <span className="reel-action-lbl">{a.l}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FeedScreen(){
+  const {data,loading}=useData(()=>api.get('/submissions/public'));
+  const subs=data?.submissions||[];
+  const items=subs.length>0?subs:Array.from({length:6},(_,i)=>({
+    id:i,author_name:['Alex Ivanov','Maria S.','Denis P.','Ola K.','Ivan M.','Kate L.'][i],
+    platform:['tiktok','youtube','instagram','tiktok','youtube','instagram'][i],
+    views_count:[2400000,850000,410000,190000,74000,32000][i],
+    payout_amount:[247.5,89.0,45.2,19.7,8.1,3.6][i],
+    task_title:['Обзор iPhone 16','Топ-5 лайфхаков','Рецепт 5 минут','Travel vlog','Coding life','Morning routine'][i],
+    video_url:`https://example.com/video/${i+1}`,
+  }));
+  if(loading) return <div className="loading"><div className="spinner"/></div>;
+  return(
+    <div className="screen raw">
+      <div className="reels-wrap">
+        {items.map((s,i)=><Reel key={s.id??i} s={s} i={i} total={items.length}/>)}
+      </div>
+    </div>
+  );
+}
+
+// ── Tasks ───────────────────────────────────────────────────────────────────
+const TC=[['#0c0a1e','#4d8eff15'],['#071a0a','#25d49715'],['#180c06','#ff6eb415'],['#180828','#a78bfa15'],['#1a1000','#ffb83015'],['#061418','#22d3ee15']];
+const TE=['📱','✈️','🍕','💻','🎵','🌿','📸','🎯','🔥','💡'];
+
+function TasksScreen(){
+  const {data,loading}=useData(()=>api.get('/tasks'));
+  const {user}=useAuth();
+  const tasks=data?.tasks||[];
+  const [view,setView]=useState('cards');
+  const [sort,setSort]=useState('budget');
+  const [sel,setSel]=useState(null);
+  const [subSh,setSubSh]=useState(null);
+  const [url,setUrl]=useState('');
+  const [sub,setSub]=useState(false);
+  const [msg,setMsg]=useState('');
+
+  const sorts=[{id:'budget',l:'💰 Бюджет'},{id:'cpm',l:'📈 Ставка'},{id:'payout',l:'🏆 Потолок'},{id:'new',l:'🆕 Новые'}];
+  const sorted=[...tasks].sort((a,b)=>
+    sort==='cpm'?b.cpm_rate-a.cpm_rate:
+    sort==='payout'?b.max_payout-a.max_payout:
+    sort==='new'?new Date(b.created_at)-new Date(a.created_at):
+    (b.budget_pool-b.budget_spent)-(a.budget_pool-a.budget_spent)
+  );
+
+  const doSub=async()=>{
+    if(!url.trim())return;setSub(true);setMsg('');
+    try{await api.post('/submissions',{task_id:subSh.id,video_url:url});setMsg('ok');setUrl('');}
+    catch(e){setMsg(e.message);}finally{setSub(false);}
+  };
+
+  if(loading) return <div className="loading"><div className="spinner"/></div>;
+
+  return(
+    <div className="screen">
+      <div className="topbar">
+        <div className="topbar-row">
+          <div className="topbar-title">Задания</div>
+          <div className="view-toggle">
+            <button className={`vbtn ${view==='cards'?'active':''}`} onClick={()=>setView('cards')}><Ico n="grid" s={13}/>Карточки</button>
+            <button className={`vbtn ${view==='list'?'active':''}`} onClick={()=>setView('list')}><Ico n="list" s={13}/>Список</button>
+          </div>
+        </div>
+      </div>
+
+      <div className="sort-row">
+        {sorts.map(s=><button key={s.id} className={`chip ${sort===s.id?'on':''}`} onClick={()=>setSort(s.id)}>{s.l}</button>)}
+      </div>
+
+      {view==='cards'&&(
+        <div className="task-grid">
+          {sorted.map((t,i)=>{
+            const [b1,b2]=TC[i%TC.length];
+            const pct=Math.min(100,t.budget_spent/t.budget_pool*100);
+            return(
+              <div key={t.id} className="tcard" onClick={()=>setSel(t)} style={{animationDelay:`${i*.04}s`}}>
+                <div className="tcard-top" style={{background:`linear-gradient(135deg,${b1},${b2})`}}>
+                  <div className="tcard-emoji">{TE[i%TE.length]}</div>
+                  <div style={{position:'absolute',top:7,right:7}}><Badge status={t.status}/></div>
+                </div>
+                <div className="tcard-body">
+                  <div className="tcard-title">{t.title}</div>
+                  <div className="tcard-cpm">${t.cpm_rate}<span style={{fontSize:10,fontWeight:500,WebkitTextFillColor:'rgba(255,255,255,.35)'}}>/1K</span></div>
+                  <div className="prog"><div className="prog-fill" style={{width:pct+'%'}}/></div>
+                  <div className="tcard-meta">{t.submission_count} участн. · до {fmt.usd(t.max_payout)}</div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {view==='list'&&(
+        <div className="tlist">
+          {sorted.map((t,i)=>(
+            <div key={t.id} className="trow" style={{animationDelay:`${i*.04}s`}} onClick={()=>setSel(t)}>
+              <div className="trow-ico">{TE[i%TE.length]}</div>
+              <div className="trow-info">
+                <div className="trow-title">{t.title}</div>
+                <div className="trow-sub"><Badge status={t.status}/><span>{t.submission_count} участн.</span><span>· {fmt.date(t.deadline)}</span></div>
+              </div>
+              <div className="trow-right">
+                <div className="trow-cpm">${t.cpm_rate}</div>
+                <div className="trow-max">до {fmt.usd(t.max_payout)}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {sel&&(
+        <Sheet onClose={()=>setSel(null)}>
+          <div className="sheet-hd">
+            <div style={{fontSize:11,color:'var(--text3)',fontWeight:600,textTransform:'uppercase',letterSpacing:'.06em',marginBottom:7}}>Задание</div>
+            <div style={{fontSize:18,fontWeight:800,letterSpacing:'-.3px',marginBottom:9}}>{sel.title}</div>
+            <div style={{display:'flex',gap:5,flexWrap:'wrap'}}>
+              <Badge status={sel.status}/>
+              {(sel.allowed_platforms||[]).map(p=><Badge key={p} status={p} text={fmt.pl(p)}/>)}
+            </div>
+          </div>
+          <div className="sheet-bd">
+            <div className="sbox-grid">
+              <div className="sbox"><div className="sbox-lbl">CPM</div><div className="sbox-val g-green">${sel.cpm_rate}</div><div style={{fontSize:10,color:'var(--text3)',marginTop:3}}>за 1000 просмотров</div></div>
+              <div className="sbox"><div className="sbox-lbl">Макс. выплата</div><div className="sbox-val">{fmt.usd(sel.max_payout)}</div></div>
+              <div className="sbox"><div className="sbox-lbl">Дедлайн</div><div className="sbox-val" style={{fontSize:16}}>{fmt.date(sel.deadline)}</div></div>
+              <div className="sbox"><div className="sbox-lbl">Участников</div><div className="sbox-val">{sel.submission_count}</div></div>
+            </div>
+            <div style={{marginBottom:14}}>
+              <div style={{display:'flex',justifyContent:'space-between',fontSize:11,color:'var(--text3)',marginBottom:5}}>
+                <span>Использовано бюджета</span><span>{fmt.usd(sel.budget_spent)} / {fmt.usd(sel.budget_pool)}</span>
+              </div>
+              <div className="prog" style={{height:5}}><div className="prog-fill" style={{width:Math.min(100,sel.budget_spent/sel.budget_pool*100)+'%'}}/></div>
+            </div>
+            <div style={{fontSize:13,color:'var(--text2)',lineHeight:1.65,background:'var(--bg3)',padding:'12px',borderRadius:'var(--r)',border:'1px solid var(--border)',marginBottom:16}}>{sel.description}</div>
+            {user?.role==='creator'
+              ?<button className="btn btn-p full" onClick={()=>{setSubSh(sel);setSel(null);setMsg('');}}><Ico n="link" s={15}/>Загрузить видео</button>
+              :<button className="btn btn-ghost full" onClick={()=>setSel(null)}>Закрыть</button>}
+          </div>
+        </Sheet>
+      )}
+
+      {subSh&&(
+        <Sheet onClose={()=>setSubSh(null)}>
+          <div className="sheet-hd"><div style={{fontWeight:700,fontSize:16}}>{subSh.title}</div></div>
+          <div className="sheet-bd">
+            {msg==='ok'?<div className="alert alert-ok">✓ Видео отправлено на модерацию!</div>:msg?<div className="alert alert-err">⚠ {msg}</div>:null}
+            <div className="fg"><label>Ссылка на видео</label><input placeholder="https://youtube.com/watch?v=..." value={url} onChange={e=>setUrl(e.target.value)}/></div>
+            <div className="alert alert-info" style={{fontSize:12}}>YouTube, TikTok, Instagram Reels — только публичные</div>
+            <div className="row-btns">
+              <button className="btn btn-s" style={{flex:1}} onClick={()=>setSubSh(null)}>Отмена</button>
+              <button className="btn btn-p" style={{flex:1}} onClick={doSub} disabled={sub}>{sub?<span className="spinner"/>:'Загрузить'}</button>
+            </div>
+          </div>
+        </Sheet>
+      )}
+    </div>
+  );
+}
+
+// ── Dashboard ────────────────────────────────────────────────────────────────
+function Dashboard(){
+  const {user}=useAuth();
+  const {data,loading,reload}=useData(()=>api.get('/creator/dashboard'));
+  const [psh,setPsh]=useState(false);
+  const [pf,setPf]=useState({amount:'',method:'bank_transfer'});
+  const [pm,setPm]=useState('');
+
+  const reqPay=async()=>{
+    setPm('');
+    try{await api.post('/creator/payouts/request',{amount:parseFloat(pf.amount),method:pf.method});setPm('ok');reload();}
+    catch(e){setPm(e.message);}
+  };
+
+  if(loading) return <div className="loading"><div className="spinner"/></div>;
+  const {stats={},submissions=[],payouts=[]}=data||{};
+
+  return(
+    <div className="screen">
+      <div className="profile-hd">
+        <div className="profile-ava">{(user?.name||'?')[0].toUpperCase()}</div>
+        <div className="profile-name">{user?.name}</div>
+        <div className="profile-role">{user?.role}</div>
+      </div>
+      <div className="balance-card">
+        <div>
+          <div className="balance-lbl">Баланс (ожидание)</div>
+          <div className="balance-amt">{fmt.usd(stats.balance_pending)}</div>
+          <div style={{fontSize:11,color:'var(--text3)',marginTop:3}}>Выплачено: <span style={{color:'var(--green)'}}>{fmt.usd(stats.balance_paid)}</span></div>
+        </div>
+        <button className="btn btn-ok btn-sm" onClick={()=>setPsh(true)}><Ico n="dollar" s={13}/>Вывести</button>
+      </div>
+      <div className="mini-stats">
+        {[{v:fmt.num(stats.total_views),l:'Просмотров',c:'var(--purple)'},{v:stats.total_submissions||0,l:'Видео',c:'var(--blue)'},{v:stats.approved||0,l:'Одобрено',c:'var(--green)'}].map(s=>(
+          <div key={s.l} className="mstat">
+            <div className="mstat-val" style={{color:s.c}}>{s.v}</div>
+            <div className="mstat-lbl">{s.l}</div>
+          </div>
+        ))}
+      </div>
+      <div className="sec">
+        <div className="sec-lbl">Мои видео</div>
+        {submissions.length===0
+          ?<div className="empty"><span className="empty-ico">🎬</span><div className="empty-t">Нет видео</div><div className="empty-s">Загрузи первое в разделе заданий</div></div>
+          :submissions.map(s=>(
+            <div key={s.id} className="vitem">
+              <div className="vitem-thumb">{{youtube:'🎥',tiktok:'📱',instagram:'📸'}[s.platform]||'🎬'}</div>
+              <div className="vitem-info">
+                <div className="vitem-title">{s.task_title}</div>
+                <div className="vitem-meta"><Badge status={s.status}/><span>{fmt.num(s.views_count)} просм.</span></div>
+              </div>
+              <div className="vitem-earn">{fmt.usd(s.payout_amount)}</div>
+            </div>
+          ))}
+      </div>
+      {payouts.length>0&&(
+        <div className="sec">
+          <div className="sec-lbl">Выплаты</div>
+          <div className="acard">
+            {payouts.map(p=>(
+              <div key={p.id} className="arow">
+                <div className="arow-info">
+                  <div className="arow-title">{fmt.usd(p.amount)}</div>
+                  <div className="arow-sub"><span>{p.method}</span><span>·</span><span>{fmt.date(p.created_at)}</span></div>
+                </div>
+                <Badge status={p.status}/>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      {psh&&(
+        <Sheet onClose={()=>setPsh(false)}>
+          <div className="sheet-hd"><div style={{fontWeight:700,fontSize:16}}>Вывод: <span style={{color:'var(--green)'}}>{fmt.usd(stats.balance_pending)}</span></div></div>
+          <div className="sheet-bd">
+            {pm==='ok'?<div className="alert alert-ok">✓ Запрос отправлен! Обработка 1–3 дня.</div>:pm?<div className="alert alert-err">⚠ {pm}</div>:null}
+            <div className="fg"><label>Сумма (мин. $10)</label><input type="number" min="10" placeholder="0.00" value={pf.amount} onChange={e=>setPf(p=>({...p,amount:e.target.value}))}/></div>
+            <div className="fg"><label>Способ вывода</label>
+              <select value={pf.method} onChange={e=>setPf(p=>({...p,method:e.target.value}))}>
+                <option value="bank_transfer">Банковский перевод</option>
+                <option value="wise">Wise</option>
+                <option value="paypal">PayPal</option>
+                <option value="crypto_usdt">USDT</option>
+              </select>
+            </div>
+            <div className="row-btns">
+              <button className="btn btn-s" style={{flex:1}} onClick={()=>setPsh(false)}>Отмена</button>
+              <button className="btn btn-p" style={{flex:1}} onClick={reqPay}>Запросить</button>
+            </div>
+          </div>
+        </Sheet>
+      )}
+    </div>
+  );
+}
+
+// ── Admin Panel ───────────────────────────────────────────────────────────────
+function Admin(){
+  const [tab,setTab]=useState('mod');
+  const tabs=[{id:'mod',l:'Модерация'},{id:'tasks',l:'Задания'},{id:'users',l:'Авторы'},{id:'pays',l:'Выплаты'},{id:'stats',l:'Аналитика'}];
+  return(
+    <div className="screen" style={{paddingBottom:0}}>
+      <div className="adm-hd"><div className="adm-title">Панель управления</div></div>
+      <div className="adm-tabs">
+        {tabs.map(t=><button key={t.id} className={`adm-tab ${tab===t.id?'on':''}`} onClick={()=>setTab(t.id)}>{t.l}</button>)}
+      </div>
+      <div className="adm-body" style={{overflowY:'auto',height:'calc(100% - 98px)',paddingBottom:80}}>
+        {tab==='mod'&&<AModeration/>}
+        {tab==='tasks'&&<ATasks/>}
+        {tab==='users'&&<AUsers/>}
+        {tab==='pays'&&<APayouts/>}
+        {tab==='stats'&&<AStats/>}
+      </div>
+    </div>
+  );
+}
+
+function AModeration(){
+  const [st,setSt]=useState('pending');
+  const {data,loading,reload}=useData(()=>api.get(`/admin/moderation?status=${st}`),[st]);
+  const [acting,setActing]=useState({});
+  const [nsh,setNsh]=useState(null);
+  const [note,setNote]=useState('');
+
+  const mod=async(id,action,n='')=>{
+    setActing(p=>({...p,[id]:action}));
+    try{await api.post(`/admin/moderation/${id}`,{action,note:n});reload();}
+    catch(e){alert(e.message);}finally{setActing(p=>({...p,[id]:null}));}
+  };
+  const subs=data?.submissions||[];
+
+  return(
+    <>
+      <div className="astat-grid">
+        <div className="astat"><div className="astat-v">{subs.length}</div><div className="astat-l">В очереди</div></div>
+        <div className="astat"><div className="astat-v" style={{color:'var(--amber)'}}>—</div><div className="astat-l">Фрод-флагов</div></div>
+      </div>
+      <div className="sort-row" style={{padding:'0 0 10px'}}>
+        {['pending','approved','rejected'].map(s=><button key={s} className={`chip ${st===s?'on':''}`} onClick={()=>setSt(s)} style={{fontSize:11}}>{{pending:'На проверке',approved:'Одобрено',rejected:'Отклонено'}[s]}</button>)}
+        <button className="chip" onClick={reload} style={{marginLeft:'auto'}}><Ico n="refresh" s={11}/></button>
+      </div>
+      {loading?<div className="loading" style={{height:200}}><div className="spinner"/></div>
+        :subs.length===0?<div className="empty"><span className="empty-ico">✅</span><div className="empty-t">Очередь пуста</div></div>
+        :<div className="acard">
+          {subs.map(s=>(
+            <div key={s.id} className="arow">
+              <div className="athumb">{{youtube:'🎥',tiktok:'📱',instagram:'📸'}[s.platform]||'🎬'}</div>
+              <div className="arow-info">
+                <div className="arow-title">{s.author_name}</div>
+                <div className="arow-sub"><Badge status={s.platform} text={fmt.pl(s.platform)}/><span style={{maxWidth:100,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{s.task_title}</span></div>
+                {s.fraud_score>0&&<div style={{marginTop:4}}><div style={{fontSize:10,color:s.fraud_score>70?'var(--red)':'var(--amber)',fontWeight:600}}>Фрод: {s.fraud_score}</div><div className="score-bar"><div className={`score-fill ${s.fraud_score<40?'s-lo':s.fraud_score<70?'s-mi':'s-hi'}`} style={{width:s.fraud_score+'%'}}/></div></div>}
+              </div>
+              {st==='pending'&&(
+                <div className="arow-rt">
+                  <button className="btn btn-ok btn-sm" style={{width:36,padding:'6px 0'}} onClick={()=>mod(s.id,'approve')} disabled={acting[s.id]}>
+                    {acting[s.id]==='approve'?<span className="spinner" style={{width:13,height:13}}/>:<Ico n="check" s={13}/>}
+                  </button>
+                  <button className="btn btn-danger btn-sm" style={{width:36,padding:'6px 0'}} onClick={()=>{setNsh(s);setNote('');}} disabled={acting[s.id]}>
+                    <Ico n="x" s={13}/>
+                  </button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>}
+      {nsh&&(
+        <Sheet onClose={()=>setNsh(null)}>
+          <div className="sheet-hd"><div style={{fontWeight:700,fontSize:16}}>Отклонить видео</div></div>
+          <div className="sheet-bd">
+            <div className="fg"><label>Причина</label><textarea placeholder="Причина..." value={note} onChange={e=>setNote(e.target.value)}/></div>
+            <div className="row-btns">
+              <button className="btn btn-s" style={{flex:1}} onClick={()=>setNsh(null)}>Отмена</button>
+              <button className="btn btn-danger" style={{flex:1}} onClick={()=>{mod(nsh.id,'reject',note);setNsh(null);}}>Отклонить</button>
+            </div>
+          </div>
+        </Sheet>
+      )}
+    </>
+  );
+}
+
+function ATasks(){
+  const {data,loading,reload}=useData(()=>api.get('/tasks?status=active'));
+  const [nsh,setNsh]=useState(false);
+  const [form,setForm]=useState({title:'',description:'',budget_pool:'',cpm_rate:'5',max_payout:'500',deadline:''});
+  const [saving,setSaving]=useState(false);
+  const [err,setErr]=useState('');
+  const tasks=data?.tasks||[];
+
+  const save=async()=>{setSaving(true);setErr('');try{await api.post('/tasks',form);reload();setNsh(false);}catch(e){setErr(e.message);}finally{setSaving(false);}};
+  const chg=async(id,s)=>{try{await api.patch(`/tasks/${id}`,{status:s});reload();}catch(e){alert(e.message);}};
+
+  if(loading) return <div className="loading" style={{height:200}}><div className="spinner"/></div>;
+  return(
+    <>
+      <button className="btn btn-p full" style={{marginBottom:12}} onClick={()=>setNsh(true)}><Ico n="plus" s={14}/>Новое задание</button>
+      <div className="acard">
+        {tasks.map((t,i)=>(
+          <div key={t.id} className="arow">
+            <div className="athumb">{TE[i%TE.length]}</div>
+            <div className="arow-info">
+              <div className="arow-title">{t.title}</div>
+              <div className="arow-sub"><Badge status={t.status}/><span className="g-green" style={{fontWeight:700}}>${t.cpm_rate}/1K</span><span>{t.submission_count} заявок</span></div>
+              <div className="prog" style={{marginTop:5}}><div className="prog-fill" style={{width:Math.min(100,t.budget_spent/t.budget_pool*100)+'%'}}/></div>
+            </div>
+            <div className="arow-rt" style={{gap:4}}>
+              {t.status==='active'&&<button className="btn btn-s btn-sm" style={{fontSize:10}} onClick={()=>chg(t.id,'paused')}>Пауза</button>}
+              {t.status==='paused'&&<button className="btn btn-ok btn-sm" style={{fontSize:10}} onClick={()=>chg(t.id,'active')}>▶</button>}
+              <button className="btn btn-danger btn-sm" style={{fontSize:11,padding:'5px 8px'}} onClick={()=>chg(t.id,'closed')}>✕</button>
+            </div>
+          </div>
+        ))}
+      </div>
+      {nsh&&(
+        <Sheet onClose={()=>setNsh(false)}>
+          <div className="sheet-hd"><div style={{fontWeight:700,fontSize:16}}>Новое задание</div></div>
+          <div className="sheet-bd">
+            {err&&<div className="alert alert-err">{err}</div>}
+            {[['title','Название','text'],['description','Описание','textarea'],['budget_pool','Бюджет ($)','number'],['cpm_rate','CPM ($)','number'],['max_payout','Макс. выплата ($)','number'],['deadline','Дедлайн','datetime-local']].map(([k,l,t])=>(
+              <div key={k} className="fg"><label>{l}</label>{t==='textarea'?<textarea value={form[k]} onChange={e=>setForm(p=>({...p,[k]:e.target.value}))}/>:<input type={t} value={form[k]} onChange={e=>setForm(p=>({...p,[k]:e.target.value}))}/>}</div>
+            ))}
+            <div className="row-btns">
+              <button className="btn btn-s" style={{flex:1}} onClick={()=>setNsh(false)}>Отмена</button>
+              <button className="btn btn-p" style={{flex:1}} onClick={save} disabled={saving}>{saving?<span className="spinner"/>:'Создать'}</button>
+            </div>
+          </div>
+        </Sheet>
+      )}
+    </>
+  );
+}
+
+function AUsers(){
+  const [q,setQ]=useState('');
+  const {data,loading,reload}=useData(()=>api.get(`/admin/users?search=${q}`),[q]);
+  const [bsh,setBsh]=useState(null);
+  const [reason,setReason]=useState('');
+  const users=data?.users||[];
+
+  const ban=async()=>{try{await api.post(`/admin/users/${bsh.id}/ban`,{reason});reload();setBsh(null);}catch(e){alert(e.message);}};
+  const unban=async(id)=>{try{await api.post(`/admin/users/${id}/unban`);reload();}catch(e){alert(e.message);}};
+
+  return(
+    <>
+      <input placeholder="🔍 Поиск..." value={q} onChange={e=>setQ(e.target.value)} style={{marginBottom:12}}/>
+      {loading?<div className="loading" style={{height:200}}><div className="spinner"/></div>
+        :<div className="acard">
+          {users.map(u=>(
+            <div key={u.id} className="arow">
+              <div className="athumb" style={{fontSize:16,fontWeight:700}}>{u.name[0]}</div>
+              <div className="arow-info">
+                <div className="arow-title">{u.name}</div>
+                <div className="arow-sub"><Badge status={u.role}/><span style={{color:'var(--green)',fontWeight:700}}>{fmt.usd(u.balance_pending)}</span></div>
+              </div>
+              <div className="arow-rt">
+                <Badge status={u.status}/>
+                {u.status!=='banned'
+                  ?<button className="btn btn-danger btn-sm" onClick={()=>{setBsh(u);setReason('');}} style={{fontSize:11}}><Ico n="ban" s={11}/>Бан</button>
+                  :<button className="btn btn-ok btn-sm" onClick={()=>unban(u.id)} style={{fontSize:11}}>Разбан</button>}
+              </div>
+            </div>
+          ))}
+        </div>}
+      {bsh&&(
+        <Sheet onClose={()=>setBsh(null)}>
+          <div className="sheet-hd"><div style={{fontWeight:700,fontSize:16}}>Забанить {bsh.name}</div></div>
+          <div className="sheet-bd">
+            <div className="fg"><label>Причина</label><textarea value={reason} onChange={e=>setReason(e.target.value)} placeholder="Причина..."/></div>
+            <div className="row-btns">
+              <button className="btn btn-s" style={{flex:1}} onClick={()=>setBsh(null)}>Отмена</button>
+              <button className="btn btn-danger" style={{flex:1}} onClick={ban}>Подтвердить</button>
+            </div>
+          </div>
+        </Sheet>
+      )}
+    </>
+  );
+}
+
+function APayouts(){
+  const [st,setSt]=useState('pending');
+  const {data,loading,reload}=useData(()=>api.get(`/admin/payouts?status=${st}`),[st]);
+  const [acting,setActing]=useState({});
+
+  const proc=async(id,action)=>{
+    setActing(p=>({...p,[id]:action}));
+    try{await api.post(`/admin/payouts/${id}`,{action});reload();}catch(e){alert(e.message);}
+    finally{setActing(p=>({...p,[id]:null}));}
+  };
+  const pays=data?.payouts||[];
+
+  return(
+    <>
+      <div className="sort-row" style={{padding:'0 0 10px'}}>
+        {['pending','approved','rejected'].map(s=><button key={s} className={`chip ${st===s?'on':''}`} onClick={()=>setSt(s)} style={{fontSize:11}}>{{pending:'Ожидают',approved:'Подтверждены',rejected:'Отклонены'}[s]}</button>)}
+      </div>
+      {loading?<div className="loading" style={{height:200}}><div className="spinner"/></div>
+        :pays.length===0?<div className="empty"><span className="empty-ico">💸</span><div className="empty-t">Нет запросов</div></div>
+        :<div className="acard">
+          {pays.map(p=>(
+            <div key={p.id} className="arow">
+              <div className="athumb" style={{fontSize:20}}>💸</div>
+              <div className="arow-info">
+                <div className="arow-title">{p.user_name}</div>
+                <div className="arow-sub"><span style={{color:'var(--green)',fontWeight:700}}>{fmt.usd(p.amount)}</span><span>{p.method}</span><span>{fmt.date(p.created_at)}</span></div>
+              </div>
+              {st==='pending'&&(
+                <div className="arow-rt">
+                  <button className="btn btn-ok btn-sm" style={{padding:'5px 8px'}} onClick={()=>proc(p.id,'approve')} disabled={acting[p.id]}>{acting[p.id]==='approve'?<span className="spinner" style={{width:12,height:12}}/>:'✓'}</button>
+                  <button className="btn btn-danger btn-sm" style={{padding:'5px 8px'}} onClick={()=>proc(p.id,'reject')} disabled={acting[p.id]}>✕</button>
+                </div>
+              )}
+              {st!=='pending'&&<Badge status={st==='approved'?'approved':'rejected'}/>}
+            </div>
+          ))}
+        </div>}
+    </>
+  );
+}
+
+function AStats(){
+  const {data,loading}=useData(()=>api.get('/admin/analytics'));
+  if(loading) return <div className="loading" style={{height:200}}><div className="spinner"/></div>;
+  const {stats={},top_videos=[]}=data||{};
+  return(
+    <>
+      <div className="astat-grid">
+        {[{v:stats.total_creators,l:'Авторов',c:'var(--blue)'},{v:stats.total_submissions,l:'Заявок',c:'var(--purple)'},{v:fmt.num(stats.total_views),l:'Просмотров',c:'var(--green)'},{v:fmt.usd(stats.total_payouts_accrued),l:'Начислено',c:'var(--amber)'}].map((s,i)=>(
+          <div key={i} className="astat"><div className="astat-v" style={{color:s.c}}>{s.v}</div><div className="astat-l">{s.l}</div></div>
+        ))}
+      </div>
+      <div style={{fontWeight:700,fontSize:13,marginBottom:8}}>Топ видео</div>
+      <div className="acard">
+        {top_videos.slice(0,5).map((v,i)=>(
+          <div key={v.id||i} className="arow">
+            <div style={{width:24,height:24,borderRadius:6,background:'var(--bg4)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:11,fontWeight:800,color:'var(--text3)',flexShrink:0}}>{i+1}</div>
+            <div className="arow-info">
+              <div className="arow-title">{v.author_name}</div>
+              <div className="arow-sub"><Badge status={v.platform||'youtube'} text={fmt.pl(v.platform||'youtube')}/></div>
+            </div>
+            <div style={{textAlign:'right',flexShrink:0}}>
+              <div style={{fontWeight:700,fontSize:13}}>{fmt.num(v.views_count)}</div>
+              <div style={{fontSize:11,color:'var(--green)'}}>{fmt.usd(v.payout_amount)}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+
+// ── Nav + App ──────────────────────────────────────────────────────────────
+function Nav({page,setPage,user}){
+  const isAdm=user&&['admin','moderator','finance'].includes(user.role);
+  const items=isAdm
+    ?[{id:'feed',n:'play',l:'Лента'},{id:'tasks',n:'grid',l:'Задания'},{id:'admin',n:'shield',l:'Панель'},{id:'profile',n:'user',l:'Профиль'}]
+    :[{id:'feed',n:'play',l:'Лента'},{id:'tasks',n:'grid',l:'Задания'},{id:'dashboard',n:'user',l:'Кабинет'}];
+  return(
+    <nav className="navbar">
+      {items.map(it=>(
+        <button key={it.id} className={`nav-btn ${page===it.id?'active':''}`} onClick={()=>setPage(it.id)}>
+          <Ico n={it.n} s={22}/>
+          <span className="nav-lbl">{it.l}</span>
+          <div className="nav-pip"/>
+        </button>
+      ))}
+    </nav>
+  );
+}
+
+function App(){
+  const [user,setUser]=useState(null);
+  const [page,setPage]=useState('feed');
+  const [ok,setOk]=useState(false);
+
+  useEffect(()=>{
+    const t=localStorage.getItem('ol_t');
+    if(t){api.token=t;api.get('/auth/me').then(d=>setUser(d.user)).catch(()=>{localStorage.removeItem('ol_t');api.token=null;}).finally(()=>setOk(true));}
+    else setOk(true);
+  },[]);
+
+  const onAuth=u=>{setUser(u);setPage(u.role==='creator'?'dashboard':'admin');};
+  const logout=()=>{api.token=null;localStorage.removeItem('ol_t');setUser(null);setPage('feed');};
+
+  if(!ok) return <div className="loading"><div className="spinner"/></div>;
+
+  const isAdm=user&&['admin','moderator','finance'].includes(user.role);
+  const screens={
+    feed:<FeedScreen/>,
+    tasks:<TasksScreen/>,
+    dashboard:user?<Dashboard/>:<Auth onAuth={onAuth}/>,
+    admin:user?<Admin/>:<Auth onAuth={onAuth}/>,
+    profile:(
+      <div className="screen">
+        <div className="profile-hd">
+          <div className="profile-ava">{user?(user.name||'?')[0].toUpperCase():'?'}</div>
+          {user?<><div className="profile-name">{user.name}</div><div className="profile-role">{user.role}</div></>
+            :<div className="profile-name">Не авторизован</div>}
+        </div>
+        <div style={{padding:'0 14px'}}>
+          {user
+            ?<button className="btn btn-s full" onClick={logout}><Ico n="logout" s={15}/>Выйти</button>
+            :<button className="btn btn-p full" onClick={()=>setPage('dashboard')}>Войти</button>}
+        </div>
+      </div>
+    ),
+  };
+
+  return(
+    <AuthCtx.Provider value={{user}}>
+      <NavCtx.Provider value={{navigate:setPage}}>
+        {screens[page]||<FeedScreen/>}
+        <Nav page={page} setPage={setPage} user={user}/>
+      </NavCtx.Provider>
+    </AuthCtx.Provider>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
