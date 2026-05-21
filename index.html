@@ -1594,10 +1594,6 @@ h1, h2, h3, h4, h5 { font-family: var(--font); font-weight: 800; letter-spacing:
       </nav>
 
       <div class="header-actions">
-        <button class="btn btn-sm" style="background:var(--bg-card2);border:1px solid var(--border);color:var(--text2);font-family:var(--font);font-weight:700;" onclick="window.navigateTo('admin')">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-          Админ
-        </button>
         <button class="btn btn-outline btn-sm" onclick="openModal('login')">Войти</button>
         <button class="btn btn-primary btn-sm" onclick="openModal('register')">Начать бесплатно</button>
       </div>
@@ -2128,7 +2124,7 @@ h1, h2, h3, h4, h5 { font-family: var(--font); font-weight: 800; letter-spacing:
       </nav>
 
       <div class="admin-sidebar-footer">
-        <button class="admin-back-btn" onclick="window.navigateTo('home')">
+        <button class="admin-back-btn" onclick="navigateTo('home')">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
           Вернуться на сайт
         </button>
@@ -2386,88 +2382,130 @@ document.addEventListener('DOMContentLoaded', initAuth);
 let currentPage = 'home';
 
 function navigateTo(page) {
-  // Check auth for protected pages
   if ((page === 'profile' || page === 'admin') && !currentUser) {
     showToast('⚠ Войдите в систему', 'error');
-    openModal();
+    openModal('login');
     return;
   }
-  
   currentPage = page;
   document.querySelectorAll('.page-screen').forEach(s => s.classList.remove('active'));
-  document.getElementById('screen-' + page).classList.add('active');
+  const scr = document.getElementById('screen-' + page);
+  if (scr) scr.classList.add('active');
   document.querySelectorAll('.header-nav .nav-link').forEach(l => l.classList.toggle('active', l.dataset.page === page));
   document.querySelectorAll('.mobile-nav-btn').forEach(b => b.classList.toggle('active', b.dataset.page === page));
   window.scrollTo(0, 0);
-  
-  // Load page-specific data
-  if (page === 'tasks') {
-    if (TASKS.length === 0) loadTasks();
-    else renderTasks();
-  }
-  if (page === 'profile' && currentUser) loadProfile();
-  if (page === 'admin' && currentUser) loadAdminData();
+  if (page === 'tasks') { TASKS.length === 0 ? loadTasks() : renderTasks(); }
+  if (page === 'feed') loadFeed();
+  if (page === 'profile') { renderProfile(); if (currentUser) loadProfile(); }
+  if (page === 'admin') { adminSection = 'moderation'; renderAdminSection(); }
 }
 
 // Load user profile from API
 async function loadProfile() {
+  if (!currentUser) return;
   try {
     const data = await api.get('/creator/dashboard');
     userProfile = data;
-    
-    // Update profile header
-    const nameEl = document.querySelector('.profile-name');
+
+    const u = data.user || {};
+    const stats = data.stats || {};
+    const subs = data.submissions || [];
+    const payouts = data.payouts || [];
+
+    const displayName = u.name || (u.email ? u.email.split('@')[0] : 'Пользователь');
+    const handle = u.email ? u.email.split('@')[0] : 'user';
+
+    // Header
+    const nameEl = document.getElementById('profileName');
+    const avatarEl = document.getElementById('profileAvatar');
     const handleEl = document.querySelector('.profile-handle');
-    const balanceEl = document.querySelector('.balance-amount');
-    
-    if (nameEl) nameEl.textContent = data.user.name || currentUser.email.split('@')[0];
-    if (handleEl) handleEl.textContent = '@' + (data.user.email.split('@')[0]);
-    if (balanceEl) balanceEl.textContent = '$' + (data.stats.balance_pending || 0).toFixed(2);
-    
-    // Update stats
-    const statsEls = document.querySelectorAll('.profile-stat-val');
-    if (statsEls[0]) statsEls[0].textContent = (data.stats.total_views || 0).toLocaleString();
-    if (statsEls[1]) statsEls[1].textContent = data.stats.approved || 0;
-    if (statsEls[2]) statsEls[2].textContent = data.stats.approved || 0;
-    if (statsEls[3]) statsEls[3].textContent = data.stats.pending || 0;
-    
-    // Update video list
-    const videoList = document.querySelector('.profile-videos-list');
-    if (videoList && data.submissions && data.submissions.length > 0) {
-      videoList.innerHTML = data.submissions.map(sub => {
-        const statusColors = {
-          pending: '#F59E0B',
-          approved: '#10B981',
-          tracking: '#3B82F6',
-          completed: '#10B981',
-          rejected: '#EF4444'
-        };
-        const statusLabels = {
-          pending: 'На модерации',
-          approved: 'Одобрено',
-          tracking: 'Отслеживание',
-          completed: 'Завершено',
-          rejected: 'Отклонено'
-        };
-        return `
-          <div class="profile-video-item">
-            <div class="profile-video-thumb">📹</div>
-            <div class="profile-video-info">
-              <div class="profile-video-title">${sub.task_title || 'Задание'}</div>
-              <div class="profile-video-meta">
-                <span style="color:${statusColors[sub.status] || '#666'};">●</span>
-                ${statusLabels[sub.status] || sub.status}
-                ${sub.views_count ? ` · ${sub.views_count.toLocaleString()} просм.` : ''}
+    const joinedEl = document.querySelector('.profile-joined');
+    if (nameEl) nameEl.textContent = displayName;
+    if (avatarEl) avatarEl.textContent = displayName[0].toUpperCase();
+    if (handleEl) handleEl.textContent = '@' + handle;
+    if (joinedEl) {
+      // Real registration date
+      let joinedTxt = 'Недавно присоединился';
+      if (u.created_at) {
+        try {
+          const d = new Date(u.created_at);
+          joinedTxt = 'Участник с ' + d.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' });
+        } catch(e) {}
+      }
+      joinedEl.textContent = joinedTxt;
+    }
+
+    // Balance
+    const pending = stats.balance_pending != null ? stats.balance_pending : (u.balance_pending || 0);
+    const paid = stats.balance_paid != null ? stats.balance_paid : (u.balance_paid || 0);
+    const balEl = document.querySelector('.pbc-amount');
+    const totalEl = document.querySelector('.pbc-total');
+    if (balEl) balEl.textContent = '$' + Number(pending).toFixed(2);
+    if (totalEl) totalEl.innerHTML = 'Всего заработано: <strong>$' + Number(pending + paid).toFixed(2) + '</strong>';
+
+    // Stats row (4 cells)
+    const statEls = document.querySelectorAll('.pstat-val');
+    if (statEls[0]) statEls[0].textContent = fmtNum(stats.total_views || 0);
+    if (statEls[1]) statEls[1].textContent = stats.total_submissions || 0;
+    if (statEls[2]) statEls[2].textContent = stats.approved || 0;
+    if (statEls[3]) statEls[3].textContent = stats.pending || 0;
+
+    // Videos list
+    const statusColors = { pending:'#F59E0B', approved:'#10B981', tracking:'#667EEA', completed:'#10B981', rejected:'#EF4444' };
+    const statusLabels = { pending:'На модерации', approved:'Одобрено', tracking:'Отслеживание', completed:'Завершено', rejected:'Отклонено' };
+    const statusBadge = { pending:'task-badge-new', approved:'task-badge-active', tracking:'task-badge-active', completed:'task-badge-active', rejected:'task-badge-urgent' };
+
+    const vl = document.getElementById('profileVideoList');
+    if (vl) {
+      if (subs.length === 0) {
+        vl.innerHTML = `<div style="text-align:center;padding:40px 20px;color:var(--text3);"><div style="font-size:40px;margin-bottom:10px;">🎬</div><div style="font-family:var(--font);font-size:15px;font-weight:700;color:var(--text2);margin-bottom:6px;">Пока нет видео</div><div style="font-size:13px;">Примите задание и загрузите своё первое видео</div></div>`;
+      } else {
+        vl.innerHTML = subs.map(sub => {
+          const color = statusColors[sub.status] || '#9CA3AF';
+          const badge = statusBadge[sub.status] || 'task-badge-closed';
+          return `
+          <div class="pvideo-item">
+            <div class="pvideo-thumb">📹<div class="pvideo-status-dot" style="background:${color}"></div></div>
+            <div class="pvideo-info">
+              <div class="pvideo-title">${sub.task_title || 'Задание'}</div>
+              <div class="pvideo-meta">
+                <span class="task-badge ${badge}" style="font-size:11px;">${statusLabels[sub.status] || sub.status}</span>
               </div>
             </div>
-            <div class="profile-video-earnings" style="color:${statusColors[sub.status] || '#666'};">
-              ${sub.payout_amount ? '$' + sub.payout_amount.toFixed(2) : '—'}
+            <div class="pvideo-right">
+              <div class="pvideo-earn">${sub.payout_amount ? '$' + Number(sub.payout_amount).toFixed(2) : '—'}</div>
+              <div class="pvideo-views">${sub.views_count ? fmtNum(sub.views_count) + ' просм.' : 'Нет данных'}</div>
             </div>
-          </div>
-        `;
-      }).join('');
+          </div>`;
+        }).join('');
+      }
     }
-    
+
+    // Payouts list
+    const pl = document.getElementById('profilePayoutList');
+    if (pl) {
+      if (payouts.length === 0) {
+        pl.innerHTML = `<div style="text-align:center;padding:40px 20px;color:var(--text3);"><div style="font-size:40px;margin-bottom:10px;">💸</div><div style="font-family:var(--font);font-size:15px;font-weight:700;color:var(--text2);">Выплат пока нет</div></div>`;
+      } else {
+        const pmIco = { wise:'💳', usdt:'₿', paypal:'🅿️', bank_transfer:'🏦' };
+        pl.innerHTML = payouts.map(p => `
+          <div class="ppayout-item">
+            <div class="ppayout-icon">${pmIco[p.method] || '🏦'}</div>
+            <div class="ppayout-info">
+              <div class="ppayout-method">${p.method || 'Выплата'}</div>
+              <div class="ppayout-date">${p.created_at ? new Date(p.created_at).toLocaleDateString('ru-RU') : ''}</div>
+            </div>
+            <div class="ppayout-amount ${p.status === 'pending' ? 'pending' : 'success'}">${p.status === 'pending' ? '⏳ ' : ''}$${Number(p.amount).toFixed(2)}</div>
+          </div>`).join('');
+      }
+    }
+
+    // Activity tab — keep empty placeholder for now
+    const al = document.getElementById('profileActivityList');
+    if (al) {
+      al.innerHTML = `<div style="text-align:center;padding:40px 20px;color:var(--text3);"><div style="font-size:40px;margin-bottom:10px;">📋</div><div style="font-family:var(--font);font-size:15px;font-weight:700;color:var(--text2);">Здесь появится ваша активность</div></div>`;
+    }
+
   } catch (err) {
     console.error('Failed to load profile:', err);
     showToast('⚠ Не удалось загрузить профиль', 'error');
@@ -2485,12 +2523,7 @@ async function loadAdminData() {
 
 function setActivePage(page, btn) { navigateTo(page); }
 
-document.querySelectorAll('.mobile-nav-btn').forEach(btn => {
-  btn.addEventListener('click', () => navigateTo(btn.dataset.page));
-});
-document.querySelectorAll('.header-nav .nav-link').forEach(link => {
-  link.addEventListener('click', (e) => { e.preventDefault(); navigateTo(link.dataset.page); });
-});
+
 
 window.addEventListener('scroll', () => {
   const h = document.getElementById('header');
@@ -2895,16 +2928,39 @@ document.addEventListener('keydown', (e) => {
 /* ════════════════════════════════════════════════════
    FEED / REELS
 ════════════════════════════════════════════════════ */
-const FEED_DATA = [
-  { id:1, author:'Alex Ivanov',    platform:'youtube',   task:'Обзор iPhone 16',        views:2400000, payout:240.00, url:'https://youtube.com/shorts/abc123', emoji:'📱', bg:['#0c0a28','#1a1060'] },
-  { id:2, author:'Maria Sokolova', platform:'tiktok',    task:'Топ-5 лайфхаков',        views:850000,  payout:89.25,  url:'https://tiktok.com/@maria/video/1', emoji:'💡', bg:['#071a0a','#0d2810'] },
-  { id:3, author:'Denis Petrov',   platform:'instagram', task:'Рецепт за 5 минут',      views:410000,  payout:45.10,  url:'https://instagram.com/reel/xyz',    emoji:'🍕', bg:['#1a0808','#2a1010'] },
-  { id:4, author:'Olga Koroleva',  platform:'youtube',   task:'Travel vlog Токио',      views:1200000, payout:128.00, url:'https://youtube.com/shorts/def456', emoji:'✈️', bg:['#080828','#10103a'] },
-  { id:5, author:'Ivan Morozov',   platform:'tiktok',    task:'Жизнь разработчика',     views:740000,  payout:81.40,  url:'https://tiktok.com/@ivan/video/2',  emoji:'💻', bg:['#0a1218','#121c28'] },
-  { id:6, author:'Kate Lebedeva',  platform:'instagram', task:'Morning routine',        views:320000,  payout:32.00,  url:'https://instagram.com/reel/uvw',    emoji:'☀️', bg:['#18100a','#28180d'] },
-  { id:7, author:'Sergey Volkov',  platform:'youtube',   task:'Финансовый лайфхак',     views:560000,  payout:61.60,  url:'https://youtube.com/shorts/ghi789', emoji:'💰', bg:['#0a1a0a','#102010'] },
-  { id:8, author:'Anna Novikova',  platform:'tiktok',    task:'Кавер на популярную песню', views:1900000, payout:197.60, url:'https://tiktok.com/@anna/video/3', emoji:'🎵', bg:['#1a0a1a','#281028'] },
-];
+let FEED_DATA = [];
+let isLoadingFeed = false;
+
+const FEED_BGS = [['#0c0a28','#1a1060'],['#071a0a','#0d2810'],['#1a0808','#2a1010'],['#080828','#10103a'],['#0a1218','#121c28'],['#18100a','#28180d']];
+const PLATFORM_EMOJI_FEED = { youtube:'🎬', tiktok:'📱', instagram:'📸' };
+
+// Load public feed from API (approved submissions)
+async function loadFeed() {
+  if (isLoadingFeed) return;
+  isLoadingFeed = true;
+  const wrap = document.getElementById('reelsWrap');
+  if (wrap) wrap.innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.5);font-family:var(--font);">Загрузка ленты...</div>';
+  try {
+    const data = await api.get('/submissions/public');
+    FEED_DATA = (data.submissions || []).map((s, i) => ({
+      id: s.id,
+      author: s.author_name || 'Автор',
+      platform: s.platform || 'youtube',
+      task: s.task_title || 'Задание',
+      views: s.views_count || 0,
+      payout: s.payout_amount || 0,
+      url: s.video_url || '#',
+      emoji: PLATFORM_EMOJI_FEED[s.platform] || '🎬',
+      bg: FEED_BGS[i % FEED_BGS.length]
+    }));
+    renderFeed();
+  } catch (err) {
+    console.error('Failed to load feed:', err);
+    if (wrap) wrap.innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;color:rgba(255,255,255,.5);"><div style="font-size:48px;">🎬</div><div style="font-family:var(--font);font-size:16px;font-weight:700;">Лента пока пуста</div><div style="font-size:13px;color:rgba(255,255,255,.4);">Здесь появятся одобренные видео авторов</div></div>';
+  } finally {
+    isLoadingFeed = false;
+  }
+}
 
 const PLATFORM_CONFIG = {
   youtube:   { label:'YouTube',   color:'#FF4444', bg:'rgba(255,68,68,.14)'  },
@@ -2933,9 +2989,10 @@ function fmtNum(n) {
 
 function renderFeed() {
   const wrap = document.getElementById('reelsWrap');
+  if (!wrap) return;
   const items = getFeedItems();
   if (!items.length) {
-    wrap.innerHTML = `<div style="height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;color:rgba(255,255,255,.4);"><div style="font-size:48px;">🎬</div><div style="font-family:var(--font);font-size:16px;font-weight:700;">Нет видео</div></div>`;
+    wrap.innerHTML = `<div style="height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;color:rgba(255,255,255,.5);"><div style="font-size:48px;">🎬</div><div style="font-family:var(--font);font-size:16px;font-weight:700;">Лента пока пуста</div><div style="font-size:13px;color:rgba(255,255,255,.4);text-align:center;max-width:280px;">Здесь появятся одобренные видео.<br>Загрузите своё видео в разделе «Задания»</div></div>`;
     return;
   }
 
@@ -3031,31 +3088,6 @@ function shareReel(id) {
 /* ════════════════════════════════════════════════════
    PROFILE
 ════════════════════════════════════════════════════ */
-const PROFILE_VIDEOS = [
-  { id:1, title:'Обзор iPhone 16',      platform:'youtube',   status:'approved', statusLabel:'Одобрено',   views:240000, payout:24.00,  progress:48,  task:'Обзор смартфона' },
-  { id:2, title:'Топ-5 лайфхаков',      platform:'tiktok',    status:'approved', statusLabel:'Одобрено',   views:130000, payout:13.65,  progress:65,  task:'Лайфхаки' },
-  { id:3, title:'Morning routine 2025', platform:'instagram', status:'pending',  statusLabel:'Модерация',  views:0,      payout:0,      progress:0,   task:'Утренняя рутина' },
-  { id:4, title:'Travel vlog Токио',     platform:'youtube',   status:'tracking', statusLabel:'Трекинг',    views:85000,  payout:9.35,   progress:32,  task:'Путешествия' },
-  { id:5, title:'Рецепт пасты',         platform:'instagram', status:'rejected', statusLabel:'Отклонено',  views:0,      payout:0,      progress:0,   task:'Кулинария' },
-  { id:6, title:'Финансовый лайфхак',   platform:'tiktok',    status:'approved', statusLabel:'Одобрено',   views:95000,  payout:9.88,   progress:24,  task:'Финансы' },
-];
-
-const PROFILE_PAYOUTS = [
-  { id:1, method:'Wise',                amount:85.00,  status:'paid',    date:'12 июл 2025' },
-  { id:2, method:'Банковский перевод',  amount:120.50, status:'paid',    date:'03 июн 2025' },
-  { id:3, method:'USDT',                amount:45.00,  status:'pending', date:'18 июл 2025' },
-  { id:4, method:'PayPal',              amount:60.00,  status:'paid',    date:'22 мая 2025' },
-];
-
-const PROFILE_ACTIVITY = [
-  { icon:'✅', text:'<strong>Видео одобрено:</strong> "Обзор iPhone 16" — начат трекинг просмотров', time:'2 часа назад' },
-  { icon:'💰', text:'Начислено <strong>$9.35</strong> за "Travel vlog Токио" — 85K просмотров', time:'5 часов назад' },
-  { icon:'📤', text:'Вы загрузили видео <strong>"Morning routine 2025"</strong> на модерацию', time:'вчера, 14:32' },
-  { icon:'🎯', text:'Вы приняли задание <strong>"Утренняя рутина"</strong>', time:'вчера, 14:20' },
-  { icon:'💸', text:'Выплата <strong>$85.00</strong> через Wise успешно отправлена', time:'12 июл 2025' },
-  { icon:'🎉', text:'Видео <strong>"Топ-5 лайфхаков"</strong> набрало <strong>100K</strong> просмотров', time:'10 июл 2025' },
-];
-
 const STATUS_DOTS = {
   approved: { color: '#10B981' }, tracking: { color: '#667EEA' },
   pending:  { color: '#F59E0B' }, rejected: { color: '#EF4444' },
@@ -3067,56 +3099,33 @@ const VIDEO_STATUS_BADGE = {
 };
 
 function renderProfile() {
-  // Videos
+  // Reset the profile UI to neutral defaults; loadProfile() fills real data from API
+  const nameEl = document.getElementById('profileName');
+  const avatarEl = document.getElementById('profileAvatar');
+  const handleEl = document.querySelector('.profile-handle');
+  const joinedEl = document.querySelector('.profile-joined');
+  if (currentUser) {
+    const dn = currentUser.name || (currentUser.email ? currentUser.email.split('@')[0] : 'Пользователь');
+    if (nameEl) nameEl.textContent = dn;
+    if (avatarEl) avatarEl.textContent = dn[0].toUpperCase();
+    if (handleEl) handleEl.textContent = '@' + (currentUser.email ? currentUser.email.split('@')[0] : 'user');
+  }
+  if (joinedEl) joinedEl.textContent = 'Загрузка...';
+
+  // Zero out balance + stats until API responds
+  const balEl = document.querySelector('.pbc-amount');
+  const totalEl = document.querySelector('.pbc-total');
+  if (balEl) balEl.textContent = '$0.00';
+  if (totalEl) totalEl.innerHTML = 'Всего заработано: <strong>$0.00</strong>';
+  document.querySelectorAll('.pstat-val').forEach(el => el.textContent = '0');
+
+  // Loading placeholders
   const vl = document.getElementById('profileVideoList');
-  if (vl) vl.innerHTML = PROFILE_VIDEOS.map(v => {
-    const dot = STATUS_DOTS[v.status] || { color: '#9CA3AF' };
-    const badge = VIDEO_STATUS_BADGE[v.status] || 'task-badge-closed';
-    return `
-    <div class="pvideo-item">
-      <div class="pvideo-thumb">
-        ${PLATFORM_EMOJIS[v.platform] || '🎬'}
-        <div class="pvideo-status-dot" style="background:${dot.color}"></div>
-      </div>
-      <div class="pvideo-info">
-        <div class="pvideo-title">${v.title}</div>
-        <div class="pvideo-meta">
-          <span class="task-badge ${badge}" style="font-size:11px;">${v.statusLabel}</span>
-          <span style="font-size:11px;color:var(--text3);">${v.task}</span>
-        </div>
-        ${v.progress > 0 ? `<div class="pvideo-prog"><div class="pvideo-prog-fill" style="width:${v.progress}%"></div></div>` : ''}
-      </div>
-      <div class="pvideo-right">
-        <div class="pvideo-earn">${v.payout > 0 ? '$'+v.payout.toFixed(2) : '—'}</div>
-        <div class="pvideo-views">${v.views > 0 ? fmtNum(v.views)+' просм.' : 'Нет данных'}</div>
-      </div>
-    </div>`;
-  }).join('');
-
-  // Payouts
+  if (vl) vl.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text3);">Загрузка...</div>';
   const pl = document.getElementById('profilePayoutList');
-  if (pl) pl.innerHTML = PROFILE_PAYOUTS.map(p => `
-    <div class="ppayout-item">
-      <div class="ppayout-icon">${p.method === 'Wise' ? '💳' : p.method === 'USDT' ? '₿' : p.method === 'PayPal' ? '🅿️' : '🏦'}</div>
-      <div class="ppayout-info">
-        <div class="ppayout-method">${p.method}</div>
-        <div class="ppayout-date">${p.date}</div>
-      </div>
-      <div class="ppayout-amount ${p.status === 'pending' ? 'pending' : 'success'}">
-        ${p.status === 'pending' ? '⏳ ' : ''}$${p.amount.toFixed(2)}
-      </div>
-    </div>`).join('');
-
-  // Activity
+  if (pl) pl.innerHTML = '';
   const al = document.getElementById('profileActivityList');
-  if (al) al.innerHTML = PROFILE_ACTIVITY.map(a => `
-    <div class="pactivity-item">
-      <div class="pactivity-dot">${a.icon}</div>
-      <div>
-        <div class="pactivity-text">${a.text}</div>
-        <div class="pactivity-time">${a.time}</div>
-      </div>
-    </div>`).join('');
+  if (al) al.innerHTML = '';
 }
 
 function setProfileTab(tab, btn) {
@@ -3154,39 +3163,13 @@ function submitPayout() {
 /* ════════════════════════════════════════════════════
    NAVIGATION (override to init screens)
 ════════════════════════════════════════════════════ */
-const _origNavigateTo = navigateTo;
-// Patch navigateTo to init feed/profile on first visit
-const _pagesInited = new Set(['home']);
-const origNav = navigateTo;
-window.navigateTo = function(page) {
-  origNav(page);
-  if (!_pagesInited.has(page)) {
-    _pagesInited.add(page);
-    if (page === 'feed') renderFeed();
-    if (page === 'profile') renderProfile();
-  } else {
-    if (page === 'feed') { /* already rendered */ }
-  }
-};
-// Also patch the module-level reference
-Object.defineProperty(window, 'navigateTo', {
-  get() { return window._nav; },
-  set(fn) { window._nav = fn; }
+// Nav event listeners (navigateTo defined above)
+document.querySelectorAll('.mobile-nav-btn').forEach(btn => {
+  btn.onclick = () => navigateTo(btn.dataset.page);
 });
-window.navigateTo = function(page) {
-  currentPage = page;
-  document.querySelectorAll('.page-screen').forEach(s => s.classList.remove('active'));
-  document.getElementById('screen-' + page).classList.add('active');
-  document.querySelectorAll('.header-nav .nav-link').forEach(l => l.classList.toggle('active', l.dataset.page === page));
-  document.querySelectorAll('.mobile-nav-btn').forEach(b => b.classList.toggle('active', b.dataset.page === page));
-  window.scrollTo(0, 0);
-  if (page === 'tasks') renderTasks();
-  if (page === 'feed') renderFeed();
-  if (page === 'profile') renderProfile();
-  if (page === 'admin') { adminSection = 'moderation'; renderAdminSection(); }
-};
-document.querySelectorAll('.mobile-nav-btn').forEach(btn => { btn.onclick = () => window.navigateTo(btn.dataset.page); });
-document.querySelectorAll('.header-nav .nav-link').forEach(link => { link.onclick = (e) => { e.preventDefault(); window.navigateTo(link.dataset.page); }; });
+document.querySelectorAll('.header-nav .nav-link').forEach(link => {
+  link.onclick = (e) => { e.preventDefault(); navigateTo(link.dataset.page); };
+});
 
 /* ════════════════════════════════════════════════════
    ADMIN PANEL
