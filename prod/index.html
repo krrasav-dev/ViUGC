@@ -2327,6 +2327,58 @@ const api = {
 };
 
 let currentUser = null;
+let userProfile = null;
+
+// Initialize auth on page load
+async function initAuth() {
+  const token = api.getToken();
+  if (!token) return;
+  
+  try {
+    const data = await api.get('/auth/me');
+    currentUser = data.user;
+    updateUIForLoggedInUser();
+  } catch (err) {
+    console.error('Auth init failed:', err);
+    api.setToken(null);
+    currentUser = null;
+  }
+}
+
+function updateUIForLoggedInUser() {
+  if (!currentUser) return;
+  
+  // Update header buttons
+  const actions = document.querySelector('.header-actions');
+  if (actions) {
+    actions.innerHTML = `
+      <span style="font-family:var(--font);font-size:14px;font-weight:600;color:var(--text);margin-right:12px;">
+        ${currentUser.name || currentUser.email.split('@')[0]}
+      </span>
+      ${['admin', 'moderator'].includes(currentUser.role) ? `
+        <button class="btn btn-sm" style="background:var(--bg-card2);border:1px solid var(--border);color:var(--text2);font-family:var(--font);font-weight:700;margin-right:8px;" onclick="navigateTo('admin')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+          Админ
+        </button>` : ''}
+      <button class="btn btn-outline btn-sm" onclick="logout()">Выйти</button>
+    `;
+  }
+  
+  // Hide auth buttons, show user menu
+  document.querySelectorAll('.auth-trigger').forEach(el => el.style.display = 'none');
+}
+
+function logout() {
+  api.setToken(null);
+  currentUser = null;
+  userProfile = null;
+  window.location.href = '/';
+}
+
+// Run auth check on load
+document.addEventListener('DOMContentLoaded', initAuth);
 
 /* ════════════════════════════════════════════════════
    NAVIGATION
@@ -2334,13 +2386,101 @@ let currentUser = null;
 let currentPage = 'home';
 
 function navigateTo(page) {
+  // Check auth for protected pages
+  if ((page === 'profile' || page === 'admin') && !currentUser) {
+    showToast('⚠ Войдите в систему', 'error');
+    openModal();
+    return;
+  }
+  
   currentPage = page;
   document.querySelectorAll('.page-screen').forEach(s => s.classList.remove('active'));
   document.getElementById('screen-' + page).classList.add('active');
   document.querySelectorAll('.header-nav .nav-link').forEach(l => l.classList.toggle('active', l.dataset.page === page));
   document.querySelectorAll('.mobile-nav-btn').forEach(b => b.classList.toggle('active', b.dataset.page === page));
   window.scrollTo(0, 0);
-  if (page === 'tasks') renderTasks();
+  
+  // Load page-specific data
+  if (page === 'tasks') {
+    if (TASKS.length === 0) loadTasks();
+    else renderTasks();
+  }
+  if (page === 'profile' && currentUser) loadProfile();
+  if (page === 'admin' && currentUser) loadAdminData();
+}
+
+// Load user profile from API
+async function loadProfile() {
+  try {
+    const data = await api.get('/creator/dashboard');
+    userProfile = data;
+    
+    // Update profile header
+    const nameEl = document.querySelector('.profile-name');
+    const handleEl = document.querySelector('.profile-handle');
+    const balanceEl = document.querySelector('.balance-amount');
+    
+    if (nameEl) nameEl.textContent = data.user.name || currentUser.email.split('@')[0];
+    if (handleEl) handleEl.textContent = '@' + (data.user.email.split('@')[0]);
+    if (balanceEl) balanceEl.textContent = '$' + (data.stats.balance_pending || 0).toFixed(2);
+    
+    // Update stats
+    const statsEls = document.querySelectorAll('.profile-stat-val');
+    if (statsEls[0]) statsEls[0].textContent = (data.stats.total_views || 0).toLocaleString();
+    if (statsEls[1]) statsEls[1].textContent = data.stats.approved || 0;
+    if (statsEls[2]) statsEls[2].textContent = data.stats.approved || 0;
+    if (statsEls[3]) statsEls[3].textContent = data.stats.pending || 0;
+    
+    // Update video list
+    const videoList = document.querySelector('.profile-videos-list');
+    if (videoList && data.submissions && data.submissions.length > 0) {
+      videoList.innerHTML = data.submissions.map(sub => {
+        const statusColors = {
+          pending: '#F59E0B',
+          approved: '#10B981',
+          tracking: '#3B82F6',
+          completed: '#10B981',
+          rejected: '#EF4444'
+        };
+        const statusLabels = {
+          pending: 'На модерации',
+          approved: 'Одобрено',
+          tracking: 'Отслеживание',
+          completed: 'Завершено',
+          rejected: 'Отклонено'
+        };
+        return `
+          <div class="profile-video-item">
+            <div class="profile-video-thumb">📹</div>
+            <div class="profile-video-info">
+              <div class="profile-video-title">${sub.task_title || 'Задание'}</div>
+              <div class="profile-video-meta">
+                <span style="color:${statusColors[sub.status] || '#666'};">●</span>
+                ${statusLabels[sub.status] || sub.status}
+                ${sub.views_count ? ` · ${sub.views_count.toLocaleString()} просм.` : ''}
+              </div>
+            </div>
+            <div class="profile-video-earnings" style="color:${statusColors[sub.status] || '#666'};">
+              ${sub.payout_amount ? '$' + sub.payout_amount.toFixed(2) : '—'}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+    
+  } catch (err) {
+    console.error('Failed to load profile:', err);
+    showToast('⚠ Не удалось загрузить профиль', 'error');
+  }
+}
+
+async function loadAdminData() {
+  // Load admin dashboard data
+  try {
+    // Implement admin data loading
+  } catch (err) {
+    console.error('Failed to load admin data:', err);
+  }
 }
 
 function setActivePage(page, btn) { navigateTo(page); }
@@ -2358,39 +2498,44 @@ window.addEventListener('scroll', () => {
 });
 
 /* ════════════════════════════════════════════════════
-   TASKS DATA
+   TASKS DATA & API
 ════════════════════════════════════════════════════ */
-const TASKS = [
-  { id:1, status:'new', statusLabel:'Новая', category:'Обзор смартфона',
-    title:'Обзор iPhone 16 — камера и производительность',
-    description:'Снимите честный обзор iPhone 16 с акцентом на качество камеры и производительность в повседневных задачах. Видео должно длиться от 60 до 180 секунд. Обязательно покажите реальные примеры съёмки и сравнение с предыдущей моделью.',
-    deadline:'2025-08-28', createdAt:'2025-07-01', cpm:5, maxPayout:500, budgetPool:5000, budgetSpent:1240, platforms:['YouTube Shorts','TikTok'], participants:12, comments:3 },
-  { id:2, status:'new', statusLabel:'Новая', category:'Лайфхаки',
-    title:'Топ-5 лайфхаков для экономии времени',
-    description:'Расскажите о 5 реальных лайфхаках, которые помогают экономить время в повседневной жизни. Формат: динамичный, с быстрым монтажом. Каждый лайфхак — не более 20 секунд. Общая длина видео: 60–90 секунд.',
-    deadline:'2025-08-15', createdAt:'2025-07-03', cpm:3.5, maxPayout:350, budgetPool:3500, budgetSpent:890, platforms:['TikTok','Instagram Reels'], participants:28, comments:0 },
-  { id:3, status:'urgent', statusLabel:'Срочная', category:'Кулинария',
-    title:'Рецепт блюда за 5 минут',
-    description:'Покажите приготовление простого и вкусного блюда за 5 минут или меньше. Видео должно быть снято с хорошим освещением. Требование: вертикальный формат 9:16, чёткий звук и аппетитная подача.',
-    deadline:'2025-07-25', createdAt:'2025-06-20', cpm:4, maxPayout:400, budgetPool:4000, budgetSpent:3600, platforms:['Instagram Reels','TikTok','YouTube Shorts'], participants:45, comments:7 },
-  { id:4, status:'active', statusLabel:'Активна', category:'Путешествия',
-    title:'Travel vlog из любого города мира',
-    description:'Снимите короткий travel vlog из любого города. Покажите атмосферу места, интересные детали, которые не найти в путеводителях. Стиль: аутентичный, без наигранности. Длительность: 90–120 секунд.',
-    deadline:'2025-10-01', createdAt:'2025-07-10', cpm:6, maxPayout:600, budgetPool:6000, budgetSpent:420, platforms:['YouTube Shorts','Instagram Reels'], participants:8, comments:1 },
-  { id:5, status:'in-progress', statusLabel:'В работе', category:'Технологии',
-    title:'Жизнь разработчика — один день из жизни',
-    description:'Покажите обычный рабочий день разработчика: setup, задачи, инструменты, перерывы. Видео должно быть честным и без лишнего пафоса. Формат: vlog-стиль, 60–120 секунд.',
-    deadline:'2025-09-10', createdAt:'2025-07-08', cpm:5.5, maxPayout:550, budgetPool:5500, budgetSpent:1100, platforms:['YouTube Shorts','TikTok'], participants:19, comments:4 },
-  { id:6, status:'active', statusLabel:'Активна', category:'Утренняя рутина',
-    title:'Morning routine продуктивного человека',
-    description:'Покажите свой реальный утренний распорядок. Важно: без постановочности, реальные привычки. Время видео: 60–90 секунд. Обязательно упомяните 2–3 ключевых элемента вашего утра.',
-    deadline:'2025-09-20', createdAt:'2025-07-12', cpm:3, maxPayout:300, budgetPool:3000, budgetSpent:180, platforms:['TikTok','Instagram Reels'], participants:6, comments:0 },
-  { id:7, status:'closed', statusLabel:'Закрыта', category:'Музыка',
-    title:'Каверное исполнение популярной песни',
-    description:'Исполните кавер на любую популярную песню. Требования: хорошее освещение, качественный звук. Длина: 45–90 секунд.',
-    deadline:'2025-06-30', createdAt:'2025-05-15', cpm:4.5, maxPayout:450, budgetPool:4500, budgetSpent:4500, platforms:['YouTube Shorts','TikTok','Instagram Reels'], participants:62, comments:12 },
-  { id:8, status:'new', statusLabel:'Новая', category:'Финансы',
-    title:'Один лайфхак по личным финансам',
+let TASKS = [];
+let isLoadingTasks = false;
+
+// Load tasks from API
+async function loadTasks() {
+  if (isLoadingTasks) return;
+  isLoadingTasks = true;
+  
+  try {
+    const data = await api.get('/tasks');
+    TASKS = (data.tasks || []).map(task => ({
+      id: task.id,
+      status: task.status,
+      statusLabel: task.status === 'active' ? 'Активна' : task.status === 'closed' ? 'Закрыта' : 'Новая',
+      category: task.category || 'Задание',
+      title: task.title,
+      description: task.description,
+      deadline: task.deadline,
+      createdAt: task.created_at,
+      cpm: task.cpm_rate,
+      maxPayout: task.max_payout,
+      budgetPool: task.budget_pool,
+      budgetSpent: task.budget_spent || 0,
+      platforms: task.allowed_platforms || [],
+      participants: task.submission_count || 0,
+      comments: 0
+    }));
+    renderTasks();
+  } catch (err) {
+    console.error('Failed to load tasks:', err);
+    showToast('⚠ Не удалось загрузить задания', 'error');
+    // Keep showing mock data as fallback
+  } finally {
+    isLoadingTasks = false;
+  }
+}
     description:'Расскажите об одном конкретном лайфхаке по управлению личными финансами, который реально работает в вашей жизни. Без воды и общих слов — только практика. Длина: 45–75 секунд.',
     deadline:'2025-09-05', createdAt:'2025-07-15', cpm:4, maxPayout:400, budgetPool:4000, budgetSpent:0, platforms:['TikTok','YouTube Shorts'], participants:0, comments:0 },
 ];
@@ -2578,6 +2723,12 @@ function closeSheet() {
 
 function acceptTask() {
   if (!currentTaskId) return;
+  if (!currentUser) {
+    showToast('⚠ Войдите в систему', 'error');
+    openModal();
+    return;
+  }
+  
   acceptedTasks.add(currentTaskId);
   document.getElementById('sheetAccepted').classList.add('visible');
   document.getElementById('stateNotAccepted').style.display = 'none';
@@ -2595,20 +2746,52 @@ function cancelAccept() {
   renderTasks();
 }
 
-function submitVideo() {
+async function submitVideo() {
+  if (!currentUser) {
+    showToast('⚠ Войдите в систему', 'error');
+    openModal();
+    return;
+  }
+  
   const url = document.getElementById('videoUrlInput').value.trim();
-  if (!url) { showToast('⚠ Вставьте ссылку на видео', 'error'); return; }
-  if (!url.startsWith('http')) { showToast('⚠ Введите корректную ссылку', 'error'); return; }
+  if (!url) {
+    showToast('⚠ Вставьте ссылку на видео', 'error');
+    return;
+  }
+  if (!url.startsWith('http')) {
+    showToast('⚠ Введите корректную ссылку', 'error');
+    return;
+  }
+  
   const btn = document.getElementById('submitVideoBtn');
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span> Загружаем...';
-  setTimeout(() => {
+  
+  try {
+    const data = await api.post('/submissions', {
+      task_id: currentTaskId,
+      video_url: url
+    });
+    
     document.getElementById('stateAccepted').style.display = 'none';
     document.getElementById('sheetAccepted').classList.remove('visible');
     document.getElementById('stateUploaded').style.display = 'block';
-    btn.disabled = false; btn.innerHTML = 'Загрузить';
+    acceptedTasks.delete(currentTaskId);
+    
     showToast('🎉 Видео отправлено на модерацию!', 'success');
-  }, 1400);
+    
+    // Reload tasks to update participant count
+    setTimeout(() => {
+      loadTasks();
+      if (currentPage === 'profile') loadProfile();
+    }, 500);
+    
+  } catch (err) {
+    showToast('⚠ ' + (err.message || 'Ошибка загрузки'), 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = 'Загрузить';
+  }
 }
 
 /* ════════════════════════════════════════════════════
