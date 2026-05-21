@@ -325,7 +325,7 @@ select option{background:var(--bg2)}
 <script type="text/babel">
 const { useState, useEffect, useCallback, createContext, useContext } = React;
 
-const API = window.location.hostname==='localhost' ? 'http://localhost:5000/api' : '/api';
+const API_BASE = 'https://viugc.onrender.com/api';
 const api = {
   token:null,
   async req(m,p,b){
