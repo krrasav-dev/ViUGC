@@ -1035,6 +1035,26 @@ h1, h2, h3, h4, h5 { font-family: var(--font); font-weight: 800; letter-spacing:
 .sheet-upload-success-sub { font-size: 13px; color: var(--text2); font-family: var(--font-body); }
 
 /* Sort dropdown */
+.tasks-ctrl-wrap { position: relative; }
+.sort-dropdown {
+  position: absolute; top: 52px; right: 0; z-index: 50;
+  background: var(--bg-card); border: 1.5px solid var(--border);
+  border-radius: var(--r); box-shadow: var(--shadow-lg);
+  padding: 6px; min-width: 220px;
+  opacity: 0; visibility: hidden; transform: translateY(-8px);
+  transition: all .18s; pointer-events: none;
+}
+.sort-dropdown.open { opacity: 1; visibility: visible; transform: translateY(0); pointer-events: all; }
+.sort-option {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 9px 12px; border-radius: 9px; cursor: pointer;
+  font-family: var(--font); font-size: 13px; font-weight: 600; color: var(--text2);
+  transition: all .15s;
+}
+.sort-option:hover { background: var(--bg-card2); color: var(--text); }
+.sort-option.active { color: var(--primary); background: rgba(102,126,234,.06); }
+.sort-option-check { color: var(--primary); }
+
 /* ═══════════════════════════════════════════
    FEED / REELS
 ═══════════════════════════════════════════ */
@@ -2171,6 +2191,70 @@ h1, h2, h3, h4, h5 { font-family: var(--font); font-weight: 800; letter-spacing:
 </div>
 
 </main>
+
+<!-- ═══ TASK BOTTOM SHEET ═══════════════════════════ -->
+<div class="sheet-overlay" id="sheetOverlay" onclick="closeSheet()"></div>
+<div class="bottom-sheet" id="taskSheet">
+  <div class="sheet-handle-wrap" onclick="closeSheet()"><div class="sheet-handle"></div></div>
+  <div class="sheet-header">
+    <div class="sheet-category-row" id="sheetCategories"></div>
+    <div class="sheet-title" id="sheetTitle"></div>
+    <div class="sheet-subtitle" id="sheetSubtitle"></div>
+  </div>
+  <div class="sheet-body">
+    <div class="sheet-stats" id="sheetStats"></div>
+
+    <div class="sheet-desc-label">Описание задания</div>
+    <div class="sheet-desc" id="sheetDesc"></div>
+
+    <div class="sheet-desc-label">Платформы</div>
+    <div class="sheet-platforms" id="sheetPlatforms"></div>
+
+    <div class="sheet-budget-row">
+      <span class="sheet-budget-label">Бюджет израсходован</span>
+      <span class="sheet-budget-val" id="sheetBudgetVal"></span>
+    </div>
+    <div class="sheet-progress"><div class="sheet-progress-fill" id="sheetProgressFill"></div></div>
+
+    <div class="sheet-divider"></div>
+
+    <!-- Accepted banner -->
+    <div class="sheet-state-accepted" id="sheetAccepted">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 13 4 8"/></svg>
+      Задание принято — загрузите ссылку на видео
+    </div>
+
+    <!-- Action area -->
+    <div id="sheetActionArea">
+      <!-- State: not accepted -->
+      <div id="stateNotAccepted">
+        <button class="btn btn-primary btn-full btn-lg" onclick="acceptTask()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 13 4 8"/></svg>
+          Принять задание
+        </button>
+      </div>
+
+      <!-- State: accepted, upload form -->
+      <div id="stateAccepted" style="display:none;">
+        <label class="sheet-upload-label">Ссылка на ваше видео</label>
+        <input class="sheet-url-input" id="videoUrlInput" type="url" placeholder="https://youtube.com/watch?v=...">
+        <div class="sheet-url-hint">Вставьте ссылку на опубликованное видео (YouTube, TikTok или Instagram)</div>
+        <div class="sheet-actions">
+          <button class="btn btn-outline" onclick="cancelAccept()">Отказаться</button>
+          <button class="btn btn-primary" style="flex:2;" id="submitVideoBtn" onclick="submitVideo()">Загрузить</button>
+        </div>
+      </div>
+
+      <!-- State: uploaded success -->
+      <div class="sheet-upload-success" id="stateUploaded" style="display:none;">
+        <div class="sheet-upload-success-icon">🎉</div>
+        <div class="sheet-upload-success-title">Видео отправлено!</div>
+        <div class="sheet-upload-success-sub">Оно появится в вашем профиле со статусом «На модерации». После одобрения начнётся подсчёт просмотров.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="sheet-overlay" id="payoutOverlay" onclick="closePayoutSheet()"></div>
 <div class="bottom-sheet" id="payoutSheet">
   <div class="sheet-handle-wrap"><div class="sheet-handle"></div></div>
@@ -2746,8 +2830,10 @@ function openSheet(taskId) {
 }
 
 function closeSheet() {
-  document.getElementById('sheetOverlay').classList.remove('open');
-  document.getElementById('taskSheet').classList.remove('open');
+  const ov = document.getElementById('sheetOverlay');
+  const sh = document.getElementById('taskSheet');
+  if (ov) ov.classList.remove('open');
+  if (sh) sh.classList.remove('open');
   document.body.style.overflow = '';
 }
 
