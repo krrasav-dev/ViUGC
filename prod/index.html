@@ -2090,7 +2090,7 @@ h1, h2, h3, h4, h5 { font-family: var(--font); font-weight: 800; letter-spacing:
 
   <!-- Mobile tabs -->
   <div class="admin-mobile-tabs" id="adminMobileTabs">
-    <button class="admin-mobile-tab active" onclick="setAdminSection('moderation',this)">Модерация <span style="background:var(--danger);color:#fff;border-radius:5px;padding:1px 5px;font-size:10px;margin-left:4px;">3</span></button>
+    <button class="admin-mobile-tab active" onclick="setAdminSection('moderation',this)">Модерация</button>
     <button class="admin-mobile-tab" onclick="setAdminSection('tasks',this)">Задания</button>
     <button class="admin-mobile-tab" onclick="setAdminSection('users',this)">Авторы</button>
     <button class="admin-mobile-tab" onclick="setAdminSection('payouts',this)">Выплаты</button>
@@ -2115,7 +2115,7 @@ h1, h2, h3, h4, h5 { font-family: var(--font); font-weight: 800; letter-spacing:
           <button class="admin-nav-item active" id="anav-moderation" onclick="setAdminSection('moderation',this)">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
             Модерация
-            <span class="admin-nav-badge danger">3</span>
+            <span class="admin-nav-badge danger" id="badge-moderation" style="display:none;">0</span>
           </button>
           <button class="admin-nav-item" id="anav-tasks" onclick="setAdminSection('tasks',this)">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M5 4H4a2 2 0 00-2 2v14a2 2 0 002 2h16a2 2 0 002-2V6a2 2 0 00-2-2h-1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
@@ -2131,7 +2131,7 @@ h1, h2, h3, h4, h5 { font-family: var(--font); font-weight: 800; letter-spacing:
           <button class="admin-nav-item" id="anav-payouts" onclick="setAdminSection('payouts',this)">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
             Выплаты
-            <span class="admin-nav-badge warn">2</span>
+            <span class="admin-nav-badge warn" id="badge-payouts" style="display:none;">0</span>
           </button>
         </div>
         <div class="admin-nav-section">
@@ -3261,40 +3261,14 @@ document.querySelectorAll('.header-nav .nav-link').forEach(link => {
    ADMIN PANEL
 ════════════════════════════════════════════════════ */
 let adminSection = 'moderation';
+// ════════════════════════════════════════════════════
+//   ADMIN STATE — все данные грузятся с бэкенда
+// ════════════════════════════════════════════════════
+let adminData = { moderation: null, users: null, payouts: null, analytics: null, tasks: null };
 let adminSearches = {};
 
-const A_MODERATION = [
-  { id:1, author:'Alex Ivanov',    platform:'youtube',   task:'Обзор iPhone 16',    url:'https://youtube.com/shorts/abc', fraud:15, status:'pending',  date:'18 июл 2025' },
-  { id:2, author:'Maria Sokolova', platform:'tiktok',    task:'Лайфхаки',           url:'https://tiktok.com/@m/1',       fraud:82, status:'pending',  date:'17 июл 2025' },
-  { id:3, author:'Denis Petrov',   platform:'instagram', task:'Рецепт за 5 минут',  url:'https://instagram.com/reel/x',  fraud:23, status:'pending',  date:'17 июл 2025' },
-  { id:4, author:'Olga Koroleva',  platform:'youtube',   task:'Travel vlog',        url:'https://youtube.com/shorts/def',fraud:5,  status:'approved', date:'15 июл 2025' },
-  { id:5, author:'Ivan Morozov',   platform:'tiktok',    task:'Morning routine',    url:'https://tiktok.com/@i/2',       fraud:10, status:'approved', date:'14 июл 2025' },
-  { id:6, author:'Kate Lebedeva',  platform:'instagram', task:'Финансовый лайфхак', url:'https://instagram.com/reel/y',  fraud:61, status:'rejected', date:'13 июл 2025' },
-];
-let A_TASKS_ADM = [
-  { id:1, title:'Обзор iPhone 16',      status:'active', cpm:5.0, budget:5000, spent:1240, participants:12, created:'01 июл 2025' },
-  { id:2, title:'Топ-5 лайфхаков',      status:'active', cpm:3.5, budget:3500, spent:890,  participants:28, created:'03 июл 2025' },
-  { id:3, title:'Рецепт за 5 минут',    status:'active', cpm:4.0, budget:4000, spent:3600, participants:45, created:'20 июн 2025' },
-  { id:4, title:'Travel vlog',         status:'paused', cpm:6.0, budget:6000, spent:420,  participants:8,  created:'10 июл 2025' },
-  { id:5, title:'Жизнь разработчика',   status:'active', cpm:5.5, budget:5500, spent:1100, participants:19, created:'08 июл 2025' },
-  { id:6, title:'Morning routine',     status:'closed', cpm:3.0, budget:3000, spent:3000, participants:62, created:'01 апр 2025' },
-  { id:7, title:'Финансовый лайфхак',   status:'active', cpm:4.0, budget:4000, spent:0,    participants:0,  created:'15 июл 2025' },
-];
-let A_USERS_ADM = [
-  { id:1, name:'Alex Ivanov',    email:'alex@mail.ru',   videos:4,  views:240000,  earned:24.00,  status:'active', joined:'01 мар 2025' },
-  { id:2, name:'Maria Sokolova', email:'m.s@gmail.com',  videos:7,  views:650000,  earned:68.25,  status:'active', joined:'15 мар 2025' },
-  { id:3, name:'Denis Petrov',   email:'dp@yandex.ru',   videos:2,  views:0,       earned:0,      status:'banned', joined:'22 апр 2025' },
-  { id:4, name:'Olga Koroleva',  email:'ola@mail.ru',    videos:12, views:850000,  earned:94.50,  status:'active', joined:'10 фев 2025' },
-  { id:5, name:'Ivan Morozov',   email:'ivan@gmail.com', videos:3,  views:95000,   earned:10.45,  status:'active', joined:'05 май 2025' },
-  { id:6, name:'Anna Novikova',  email:'anna@gmail.com', videos:9,  views:1900000, earned:209.00, status:'active', joined:'01 янв 2025' },
-];
-let A_PAYOUTS_ADM = [
-  { id:1, user:'Anna Novikova',  amount:120.50, method:'Wise',               status:'pending',  date:'18 июл 2025' },
-  { id:2, user:'Olga Koroleva',  amount:85.00,  method:'Банковский перевод', status:'pending',  date:'17 июл 2025' },
-  { id:3, user:'Maria Sokolova', amount:60.00,  method:'PayPal',             status:'approved', date:'15 июл 2025' },
-  { id:4, user:'Ivan Morozov',   amount:10.45,  method:'USDT',               status:'approved', date:'12 июл 2025' },
-  { id:5, user:'Alex Ivanov',    amount:24.00,  method:'PayPal',             status:'rejected', date:'08 июл 2025' },
-];
+const PL_ICO = { youtube:'🎬', tiktok:'📱', instagram:'📸' };
+const PL_LBL = { youtube:'YouTube', tiktok:'TikTok', instagram:'Instagram' };
 
 function setAdminSection(section, el) {
   adminSection = section;
@@ -3306,124 +3280,150 @@ function setAdminSection(section, el) {
   renderAdminSection();
 }
 
+function adminLoading() {
+  return `<div style="text-align:center;padding:80px 20px;color:var(--text3);"><div style="font-size:32px;margin-bottom:12px;">⏳</div><div style="font-family:var(--font);font-weight:700;">Загрузка данных...</div></div>`;
+}
+function adminError(msg) {
+  return `<div style="text-align:center;padding:80px 20px;color:var(--text3);"><div style="font-size:32px;margin-bottom:12px;">⚠️</div><div style="font-family:var(--font);font-weight:700;color:var(--text2);margin-bottom:6px;">${msg}</div><div style="font-size:13px;">Убедитесь, что вы вошли под аккаунтом администратора</div></div>`;
+}
+
 function renderAdminSection() {
   const main = document.getElementById('adminMain');
   if (!main) return;
-  const renders = { moderation: renderModeration, tasks: renderAdminTasks, users: renderAdminUsers, payouts: renderAdminPayouts, analytics: renderAnalytics };
-  main.innerHTML = (renders[adminSection] || renderModeration)();
+  main.innerHTML = adminLoading();
+  if (adminSection === 'moderation') loadModeration();
+  else if (adminSection === 'users') loadAdminUsers();
+  else if (adminSection === 'payouts') loadAdminPayouts();
+  else if (adminSection === 'analytics') loadAnalytics();
+  else if (adminSection === 'tasks') loadAdminTasks();
+  else loadModeration();
 }
 
-/* MODERATION */
+function fmtAdminDate(s) {
+  if (!s) return '';
+  try { return new Date(s).toLocaleDateString('ru-RU', {day:'numeric',month:'short',year:'numeric'}); }
+  catch(e) { return s; }
+}
+
+/* ── MODERATION ─────────────────────────────────── */
+async function loadModeration() {
+  const main = document.getElementById('adminMain');
+  try {
+    // Load all three statuses to build counts
+    const [pendingRes, approvedRes, rejectedRes] = await Promise.all([
+      api.get('/admin/moderation?status=pending'),
+      api.get('/admin/moderation?status=approved'),
+      api.get('/admin/moderation?status=rejected'),
+    ]);
+    const pending = pendingRes.submissions || [];
+    const approved = approvedRes.submissions || [];
+    const rejected = rejectedRes.submissions || [];
+    adminData.moderation = { pending, approved, rejected };
+    const badge = document.getElementById('badge-moderation');
+    if (badge) { badge.textContent = pending.length; badge.style.display = pending.length ? 'flex' : 'none'; }
+    if (adminSection === 'moderation') main.innerHTML = renderModeration();
+  } catch (err) {
+    console.error(err);
+    if (adminSection === 'moderation') main.innerHTML = adminError('Не удалось загрузить очередь модерации');
+  }
+}
+
 function renderModeration() {
+  const d = adminData.moderation || { pending:[], approved:[], rejected:[] };
   const q = (adminSearches.mod||'').toLowerCase();
-  const items = A_MODERATION.filter(r => !q || r.author.toLowerCase().includes(q) || r.task.toLowerCase().includes(q));
-  const pending = A_MODERATION.filter(r=>r.status==='pending').length;
-  const plIco = {youtube:'🎬',tiktok:'📱',instagram:'📸'};
-  const plLbl = {youtube:'YouTube',tiktok:'TikTok',instagram:'Instagram'};
+  // Show pending queue (the actionable items) + recently moderated
+  const all = [...d.pending, ...d.approved, ...d.rejected];
+  const items = all.filter(r => !q || (r.author_name||'').toLowerCase().includes(q) || (r.task_title||'').toLowerCase().includes(q));
 
   const rows = items.map(r => {
-    const fc = r.fraud < 30 ? 'var(--success)' : r.fraud < 60 ? 'var(--warning)' : 'var(--danger)';
     const stB = r.status==='pending'?'<span class="abadge ab-amber">На проверке</span>':r.status==='approved'?'<span class="abadge ab-green">Одобрено</span>':'<span class="abadge ab-red">Отклонено</span>';
-    const acts = r.status==='pending'?`<div class="action-btns"><button class="abtn abtn-green" onclick="moderateVideo(${r.id},'approve')">✓ Одобрить</button><button class="abtn abtn-red" onclick="moderateVideo(${r.id},'reject')">✕ Отклонить</button></div>`:'—';
-    return `<tr><td><strong style="font-family:var(--font)">${r.author}</strong><div style="font-size:11px;color:var(--text3)">${r.date}</div></td><td>${plIco[r.platform]} ${plLbl[r.platform]}</td><td><span style="font-size:12px;color:var(--text2);display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:160px">${r.task}</span><a class="tbl-link" href="${r.url}" target="_blank">${r.url}</a></td><td><div class="score-bar"><div class="score-bar-track"><div class="score-bar-fill" style="width:${r.fraud}%;background:${fc}"></div></div><span class="score-val" style="color:${fc}">${r.fraud}</span></div></td><td>${stB}</td><td>${acts}</td></tr>`;
+    const acts = r.status==='pending'
+      ? `<div class="action-btns"><button class="abtn abtn-green" onclick="moderateVideo('${r.id}','approve')">✓ Одобрить</button><button class="abtn abtn-red" onclick="moderateVideo('${r.id}','reject')">✕ Отклонить</button></div>`
+      : '—';
+    return `<tr><td><strong style="font-family:var(--font)">${r.author_name||'—'}</strong><div style="font-size:11px;color:var(--text3)">${fmtAdminDate(r.created_at)}</div></td><td>${PL_ICO[r.platform]||'📹'} ${PL_LBL[r.platform]||r.platform||''}</td><td><span style="font-size:12px;color:var(--text2);display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:160px">${r.task_title||''}</span><a class="tbl-link" href="${r.video_url}" target="_blank">${r.video_url||''}</a></td><td>${stB}</td><td>${acts}</td></tr>`;
   }).join('');
 
-  return `<div class="admin-section-header"><div><div class="admin-section-title">Модерация видео</div><div class="admin-section-sub">${pending} видео ожидают проверки</div></div></div>
-  <div class="admin-stats-row">${[{val:pending,lbl:'На проверке',sc:'var(--warning)',ic:'⏳'},{val:A_MODERATION.filter(r=>r.status==='approved').length,lbl:'Одобрено',sc:'var(--success)',ic:'✅'},{val:A_MODERATION.filter(r=>r.status==='rejected').length,lbl:'Отклонено',sc:'var(--danger)',ic:'❌'},{val:A_MODERATION.length,lbl:'Всего заявок',sc:'var(--primary)',ic:'📊'}].map(s=>`<div class="admin-stat-card" style="--sc:${s.sc}"><div class="admin-stat-icon" style="font-size:18px;margin-bottom:10px">${s.ic}</div><div class="admin-stat-val" style="color:${s.sc}">${s.val}</div><div class="admin-stat-lbl">${s.lbl}</div></div>`).join('')}</div>
-  <div class="admin-table-wrap"><div class="admin-table-header"><div class="admin-table-title">Очередь модерации</div><div class="admin-table-actions"><div class="admin-search-wrap"><div class="admin-search-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div><input class="admin-search" placeholder="Поиск..." oninput="adminSearches.mod=this.value;renderAdminSection()"></div></div></div>
-  <div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Автор</th><th>Платформа</th><th>Задание / Ссылка</th><th>Антифрод</th><th>Статус</th><th>Действия</th></tr></thead><tbody>${rows||`<tr><td colspan="6" class="tbl-empty">Ничего не найдено</td></tr>`}</tbody></table></div></div>`;
-}
-function moderateVideo(id, action) {
-  const item = A_MODERATION.find(r=>r.id===id);
-  if (item) { item.status = action==='approve'?'approved':'rejected'; renderAdminSection(); showToast(action==='approve'?'✓ Видео одобрено':'✕ Видео отклонено', action==='approve'?'success':'error'); }
+  return `<div class="admin-section-header"><div><div class="admin-section-title">Модерация видео</div><div class="admin-section-sub">${d.pending.length} видео ожидают проверки</div></div></div>
+  <div class="admin-stats-row">${[{val:d.pending.length,lbl:'На проверке',sc:'var(--warning)',ic:'⏳'},{val:d.approved.length,lbl:'Одобрено',sc:'var(--success)',ic:'✅'},{val:d.rejected.length,lbl:'Отклонено',sc:'var(--danger)',ic:'❌'},{val:d.pending.length+d.approved.length+d.rejected.length,lbl:'Всего заявок',sc:'var(--primary)',ic:'📊'}].map(s=>`<div class="admin-stat-card" style="--sc:${s.sc}"><div class="admin-stat-icon" style="font-size:18px;margin-bottom:10px">${s.ic}</div><div class="admin-stat-val" style="color:${s.sc}">${s.val}</div><div class="admin-stat-lbl">${s.lbl}</div></div>`).join('')}</div>
+  <div class="admin-table-wrap"><div class="admin-table-header"><div class="admin-table-title">Очередь модерации</div><div class="admin-table-actions"><div class="admin-search-wrap"><div class="admin-search-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div><input class="admin-search" placeholder="Поиск..." value="${adminSearches.mod||''}" oninput="adminSearches.mod=this.value;document.getElementById('adminMain').innerHTML=renderModeration()"></div></div></div>
+  <div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Автор</th><th>Платформа</th><th>Задание / Ссылка</th><th>Статус</th><th>Действия</th></tr></thead><tbody>${rows||`<tr><td colspan="5" class="tbl-empty">Очередь пуста — все видео обработаны</td></tr>`}</tbody></table></div></div>`;
 }
 
-/* TASKS */
-function renderAdminTasks() {
-  const q = (adminSearches.tasks||'').toLowerCase();
-  const items = A_TASKS_ADM.filter(t=>!q||t.title.toLowerCase().includes(q));
-  const rows = items.map(t=>{
-    const stB = t.status==='active'?'<span class="abadge ab-green">Активна</span>':t.status==='paused'?'<span class="abadge ab-amber">Пауза</span>':'<span class="abadge ab-gray">Закрыта</span>';
-    const pct = Math.round(t.spent/t.budget*100);
-    return `<tr><td><strong style="font-family:var(--font);font-size:14px">${t.title}</strong><div style="font-size:11px;color:var(--text3)">${t.created}</div></td><td>${stB}</td><td style="font-family:var(--font);font-weight:800;color:var(--success)">$${t.cpm}/1K</td><td><div style="font-size:11px;display:flex;justify-content:space-between;margin-bottom:4px"><span style="color:var(--text3)">$${t.spent}</span><span style="color:var(--text2)">$${t.budget}</span></div><div class="score-bar-track" style="min-width:80px"><div class="score-bar-fill" style="width:${pct}%;background:var(--grad)"></div></div></td><td style="font-family:var(--font);font-weight:700">${t.participants}</td><td><div class="action-btns">${t.status==='active'?`<button class="abtn abtn-gray" onclick="toggleAdminTask(${t.id},'paused')">⏸ Пауза</button>`:''}${t.status==='paused'?`<button class="abtn abtn-green" onclick="toggleAdminTask(${t.id},'active')">▶ Старт</button>`:''}${t.status!=='closed'?`<button class="abtn abtn-red" onclick="toggleAdminTask(${t.id},'closed')">✕</button>`:''}</div></td></tr>`;
-  }).join('');
-  return `<div class="admin-section-header"><div><div class="admin-section-title">Задания</div><div class="admin-section-sub">${A_TASKS_ADM.filter(t=>t.status==='active').length} активных</div></div><button class="btn btn-primary btn-sm" onclick="openCreateTask()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Новое задание</button></div>
-  <div class="admin-stats-row">${[{val:A_TASKS_ADM.filter(t=>t.status==='active').length,lbl:'Активных',sc:'var(--success)'},{val:A_TASKS_ADM.reduce((s,t)=>s+t.participants,0),lbl:'Участников',sc:'var(--primary)'},{val:'$'+A_TASKS_ADM.reduce((s,t)=>s+t.spent,0),lbl:'Выплачено',sc:'var(--warning)'},{val:A_TASKS_ADM.length,lbl:'Всего',sc:'var(--text2)'}].map(s=>`<div class="admin-stat-card" style="--sc:${s.sc}"><div class="admin-stat-val" style="color:${s.sc}">${s.val}</div><div class="admin-stat-lbl">${s.lbl}</div></div>`).join('')}</div>
-  <div class="admin-table-wrap"><div class="admin-table-header"><div class="admin-table-title">Все задания</div><div class="admin-table-actions"><div class="admin-search-wrap"><div class="admin-search-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div><input class="admin-search" placeholder="Поиск..." oninput="adminSearches.tasks=this.value;renderAdminSection()"></div></div></div>
-  <div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Название</th><th>Статус</th><th>CPM</th><th>Бюджет</th><th>Участники</th><th>Действия</th></tr></thead><tbody>${rows||`<tr><td colspan="6" class="tbl-empty">Ничего</td></tr>`}</tbody></table></div></div>`;
-}
-function toggleAdminTask(id, s) { const t=A_TASKS_ADM.find(t=>t.id===id); if(t){t.status=s;renderAdminSection();showToast('Статус обновлён','success');} }
-function openCreateTask() { document.getElementById('createTaskModal').classList.add('open'); document.body.style.overflow='hidden'; }
-function closeCreateTask() { document.getElementById('createTaskModal').classList.remove('open'); document.body.style.overflow=''; }
-function saveNewTask() {
-  const title = document.getElementById('ct-title').value.trim();
-  if (!title) { showToast('⚠ Введите название','error'); return; }
-  A_TASKS_ADM.unshift({ id:Date.now(), title, status:'active', cpm:parseFloat(document.getElementById('ct-cpm').value)||5, budget:parseFloat(document.getElementById('ct-budget').value)||1000, spent:0, participants:0, created:new Date().toLocaleDateString('ru-RU',{day:'2-digit',month:'short',year:'numeric'}) });
-  closeCreateTask(); renderAdminSection(); showToast('✓ Задание создано!','success');
+async function moderateVideo(id, action) {
+  try {
+    await api.post('/admin/moderation/' + id, { action });
+    showToast(action==='approve'?'✓ Видео одобрено':'✕ Видео отклонено', action==='approve'?'success':'error');
+    await loadModeration();
+  } catch (err) {
+    showToast('⚠ ' + (err.message||'Ошибка'), 'error');
+  }
 }
 
-/* USERS */
+/* ── USERS ──────────────────────────────────────── */
+async function loadAdminUsers() {
+  const main = document.getElementById('adminMain');
+  try {
+    const res = await api.get('/admin/users');
+    adminData.users = res.users || [];
+    if (adminSection === 'users') main.innerHTML = renderAdminUsers();
+  } catch (err) {
+    console.error(err);
+    if (adminSection === 'users') main.innerHTML = adminError('Не удалось загрузить список авторов');
+  }
+}
+
 function renderAdminUsers() {
+  const list = adminData.users || [];
   const q = (adminSearches.users||'').toLowerCase();
-  const items = A_USERS_ADM.filter(u=>!q||u.name.toLowerCase().includes(q)||u.email.toLowerCase().includes(q));
+  const items = list.filter(u => !q || (u.name||'').toLowerCase().includes(q) || (u.email||'').toLowerCase().includes(q));
+  const activeCount = list.filter(u=>u.status==='active').length;
+  const totalEarned = list.reduce((s,u)=>s+(u.balance_paid||0)+(u.balance_pending||0),0);
+
   const rows = items.map(u=>{
-    const stB = u.status==='active'?'<span class="abadge ab-green">Активен</span>':'<span class="abadge ab-red">Заблокирован</span>';
-    return `<tr><td><div style="display:flex;align-items:center;gap:10px"><div style="width:32px;height:32px;border-radius:10px;background:var(--grad);display:flex;align-items:center;justify-content:center;color:#fff;font-family:var(--font);font-weight:800;font-size:13px;flex-shrink:0">${u.name[0]}</div><div><strong style="font-family:var(--font)">${u.name}</strong><div style="font-size:11px;color:var(--text3)">${u.email}</div></div></div></td><td>${stB}</td><td style="font-family:var(--font);font-weight:700">${u.videos}</td><td style="font-family:var(--font);font-weight:700">${fmtNum(u.views)}</td><td style="font-family:var(--font);font-weight:800;color:var(--success)">$${u.earned.toFixed(2)}</td><td style="font-size:12px;color:var(--text3)">${u.joined}</td><td><div class="action-btns">${u.status==='active'?`<button class="abtn abtn-red" onclick="toggleAdminUser(${u.id},'banned')">Блок</button>`:`<button class="abtn abtn-green" onclick="toggleAdminUser(${u.id},'active')">Разблок</button>`}</div></td></tr>`;
+    const stB = u.status==='active'?'<span class="abadge ab-green">Активен</span>':u.status==='banned'?'<span class="abadge ab-red">Заблокирован</span>':`<span class="abadge ab-gray">${u.status}</span>`;
+    const nm = u.name || (u.email? u.email.split('@')[0] : '—');
+    const earned = (u.balance_paid||0)+(u.balance_pending||0);
+    return `<tr><td><div style="display:flex;align-items:center;gap:10px"><div style="width:32px;height:32px;border-radius:10px;background:var(--grad);display:flex;align-items:center;justify-content:center;color:#fff;font-family:var(--font);font-weight:800;font-size:13px;flex-shrink:0">${nm[0].toUpperCase()}</div><div><strong style="font-family:var(--font)">${nm}</strong><div style="font-size:11px;color:var(--text3)">${u.email||''}</div></div></div></td><td>${u.role||'creator'}</td><td>${stB}</td><td style="font-family:var(--font);font-weight:800;color:var(--success)">$${earned.toFixed(2)}</td><td style="font-size:12px;color:var(--text3)">${fmtAdminDate(u.created_at)}</td><td><div class="action-btns">${u.status==='active'?`<button class="abtn abtn-red" onclick="banAdminUser('${u.id}')">Блок</button>`:`<button class="abtn abtn-green" onclick="unbanAdminUser('${u.id}')">Разблок</button>`}</div></td></tr>`;
   }).join('');
-  return `<div class="admin-section-header"><div><div class="admin-section-title">Авторы</div><div class="admin-section-sub">${A_USERS_ADM.filter(u=>u.status==='active').length} активных</div></div></div>
-  <div class="admin-stats-row">${[{val:A_USERS_ADM.length,lbl:'Всего',sc:'var(--primary)'},{val:A_USERS_ADM.filter(u=>u.status==='active').length,lbl:'Активных',sc:'var(--success)'},{val:fmtNum(A_USERS_ADM.reduce((s,u)=>s+u.views,0)),lbl:'Просмотров',sc:'var(--warning)'},{val:'$'+A_USERS_ADM.reduce((s,u)=>s+u.earned,0).toFixed(0),lbl:'Заработано',sc:'var(--text2)'}].map(s=>`<div class="admin-stat-card" style="--sc:${s.sc}"><div class="admin-stat-val" style="color:${s.sc}">${s.val}</div><div class="admin-stat-lbl">${s.lbl}</div></div>`).join('')}</div>
-  <div class="admin-table-wrap"><div class="admin-table-header"><div class="admin-table-title">Все авторы</div><div class="admin-table-actions"><div class="admin-search-wrap"><div class="admin-search-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div><input class="admin-search" placeholder="Имя или email..." oninput="adminSearches.users=this.value;renderAdminSection()"></div></div></div>
-  <div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Автор</th><th>Статус</th><th>Видео</th><th>Просмотры</th><th>Заработано</th><th>Регистрация</th><th>Действия</th></tr></thead><tbody>${rows||`<tr><td colspan="7" class="tbl-empty">Ничего</td></tr>`}</tbody></table></div>
-  <div class="admin-pagination"><div class="admin-pagination-info">Показано ${items.length} из ${A_USERS_ADM.length}</div><div class="admin-pagination-btns"><button class="pg-btn" disabled>‹</button><button class="pg-btn active">1</button><button class="pg-btn">2</button><button class="pg-btn">›</button></div></div></div>`;
-}
-function toggleAdminUser(id, s) { const u=A_USERS_ADM.find(u=>u.id===id); if(u){u.status=s;renderAdminSection();showToast(s==='banned'?'Пользователь заблокирован':'Пользователь разблокирован',s==='banned'?'error':'success');} }
 
-/* PAYOUTS */
+  return `<div class="admin-section-header"><div><div class="admin-section-title">Авторы</div><div class="admin-section-sub">${activeCount} активных из ${list.length}</div></div></div>
+  <div class="admin-stats-row">${[{val:list.length,lbl:'Всего',sc:'var(--primary)'},{val:activeCount,lbl:'Активных',sc:'var(--success)'},{val:list.filter(u=>u.status==='banned').length,lbl:'Заблокировано',sc:'var(--danger)'},{val:'$'+totalEarned.toFixed(0),lbl:'Начислено всего',sc:'var(--text2)'}].map(s=>`<div class="admin-stat-card" style="--sc:${s.sc}"><div class="admin-stat-val" style="color:${s.sc}">${s.val}</div><div class="admin-stat-lbl">${s.lbl}</div></div>`).join('')}</div>
+  <div class="admin-table-wrap"><div class="admin-table-header"><div class="admin-table-title">Все авторы</div><div class="admin-table-actions"><div class="admin-search-wrap"><div class="admin-search-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div><input class="admin-search" placeholder="Имя или email..." value="${adminSearches.users||''}" oninput="adminSearches.users=this.value;document.getElementById('adminMain').innerHTML=renderAdminUsers()"></div></div></div>
+  <div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Автор</th><th>Роль</th><th>Статус</th><th>Начислено</th><th>Регистрация</th><th>Действия</th></tr></thead><tbody>${rows||`<tr><td colspan="6" class="tbl-empty">Авторов пока нет</td></tr>`}</tbody></table></div></div>`;
+}
+
+async function banAdminUser(id) {
+  try { await api.post('/admin/users/'+id+'/ban', { reason: 'Заблокирован администратором' }); showToast('Пользователь заблокирован','error'); await loadAdminUsers(); }
+  catch(err){ showToast('⚠ '+(err.message||'Ошибка'),'error'); }
+}
+async function unbanAdminUser(id) {
+  try { await api.post('/admin/users/'+id+'/unban', {}); showToast('Пользователь разблокирован','success'); await loadAdminUsers(); }
+  catch(err){ showToast('⚠ '+(err.message||'Ошибка'),'error'); }
+}
+
+/* ── PAYOUTS ────────────────────────────────────── */
+async function loadAdminPayouts() {
+  const main = document.getElementById('adminMain');
+  try {
+    const [pendingRes, approvedRes, rejectedRes] = await Promise.all([
+      api.get('/admin/payouts?status=pending'),
+      api.get('/admin/payouts?status=approved'),
+      api.get('/admin/payouts?status=rejected'),
+    ]);
+    adminData.payouts = {
+      pending: pendingRes.payouts || [],
+      approved: approvedRes.payouts || [],
+      rejected: rejectedRes.payouts || [],
+    };
+    const pbadge = document.getElementById('badge-payouts');
+    if (pbadge) { const pc = (pendingRes.payouts||[]).length; pbadge.textContent = pc; pbadge.style.display = pc ? 'flex' : 'none'; }
+    if (adminSection === 'payouts') main.innerHTML = renderAdminPayouts();
+  } catch (err) {
+    console.error(err);
+    if (adminSection === 'payouts') main.innerHTML = adminError('Не удалось загрузить выплаты');
+  }
+}
+
 function renderAdminPayouts() {
+  const d = adminData.payouts || { pending:[], approved:[], rejected:[] };
   const q = (adminSearches.pays||'').toLowerCase();
-  const items = A_PAYOUTS_ADM.filter(p=>!q||p.user.toLowerCase().includes(q));
-  const pending = A_PAYOUTS_ADM.filter(p=>p.status==='pending');
-  const rows = items.map(p=>{
-    const stB = p.status==='pending'?'<span class="abadge ab-amber">Ожидает</span>':p.status==='approved'?'<span class="abadge ab-green">Выплачено</span>':'<span class="abadge ab-red">Отклонено</span>';
-    const acts = p.status==='pending'?`<div class="action-btns"><button class="abtn abtn-green" onclick="processAdminPayout(${p.id},'approved')">✓ Выплатить</button><button class="abtn abtn-red" onclick="processAdminPayout(${p.id},'rejected')">✕</button></div>`:'—';
-    return `<tr><td><strong style="font-family:var(--font)">${p.user}</strong></td><td style="font-family:var(--font);font-weight:800;font-size:15px;color:var(--success)">$${p.amount.toFixed(2)}</td><td>${p.method}</td><td>${stB}</td><td style="font-size:12px;color:var(--text3)">${p.date}</td><td>${acts}</td></tr>`;
-  }).join('');
-  return `<div class="admin-section-header"><div><div class="admin-section-title">Выплаты</div><div class="admin-section-sub">${pending.length} ожидают · $${pending.reduce((s,p)=>s+p.amount,0).toFixed(2)} к выплате</div></div></div>
-  <div class="admin-stats-row">${[{val:pending.length,lbl:'Ожидают',sc:'var(--warning)'},{val:'$'+pending.reduce((s,p)=>s+p.amount,0).toFixed(2),lbl:'К выплате',sc:'var(--danger)'},{val:'$'+A_PAYOUTS_ADM.filter(p=>p.status==='approved').reduce((s,p)=>s+p.amount,0).toFixed(2),lbl:'Выплачено',sc:'var(--success)'},{val:A_PAYOUTS_ADM.length,lbl:'Всего',sc:'var(--text2)'}].map(s=>`<div class="admin-stat-card" style="--sc:${s.sc}"><div class="admin-stat-val" style="color:${s.sc}">${s.val}</div><div class="admin-stat-lbl">${s.lbl}</div></div>`).join('')}</div>
-  <div class="admin-table-wrap"><div class="admin-table-header"><div class="admin-table-title">Запросы на выплату</div><div class="admin-table-actions"><div class="admin-search-wrap"><div class="admin-search-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div><input class="admin-search" placeholder="Поиск..." oninput="adminSearches.pays=this.value;renderAdminSection()"></div></div></div>
-  <div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Автор</th><th>Сумма</th><th>Способ</th><th>Статус</th><th>Дата</th><th>Действия</th></tr></thead><tbody>${rows||`<tr><td colspan="6" class="tbl-empty">Ничего</td></tr>`}</tbody></table></div></div>`;
-}
-function processAdminPayout(id, s) { const p=A_PAYOUTS_ADM.find(p=>p.id===id); if(p){p.status=s;renderAdminSection();showToast(s==='approved'?'✓ Выплата подтверждена':'Выплата отклонена',s==='approved'?'success':'error');} }
-
-/* ANALYTICS */
-function renderAnalytics() {
-  const months=['Янв','Фев','Мар','Апр','Май','Июн','Июл'];
-  const vd=[120,185,240,310,480,620,850]; const pd=[12,18,24,31,48,62,85];
-  const maxV=Math.max(...vd), maxP=Math.max(...pd);
-  const vBars=months.map((m,i)=>`<div class="bar-wrap"><div class="bar-val">${vd[i]}K</div><div class="bar" style="height:${Math.round(vd[i]/maxV*100)}%"></div><div class="bar-label">${m}</div></div>`).join('');
-  const pBars=months.map((m,i)=>`<div class="bar-wrap"><div class="bar-val">$${pd[i]}</div><div class="bar" style="height:${Math.round(pd[i]/maxP*100)}%;background:linear-gradient(180deg,#10B981,#059669)"></div><div class="bar-label">${m}</div></div>`).join('');
-  const plats=[{lbl:'TikTok',pct:42,c:'#667EEA'},{lbl:'YouTube',pct:35,c:'#764BA2'},{lbl:'Instagram',pct:23,c:'#10B981'}];
-  const r=40,circ=2*Math.PI*r; let off=0;
-  const slices=plats.map(p=>{const d=(p.pct/100)*circ,g=circ-d,el=`<circle cx="50" cy="50" r="${r}" fill="none" stroke="${p.c}" stroke-width="18" stroke-dasharray="${d} ${g}" stroke-dashoffset="${-off}" transform="rotate(-90 50 50)"/>`;off+=d;return el;}).join('');
-  return `<div class="admin-section-header"><div><div class="admin-section-title">Аналитика</div><div class="admin-section-sub">Данные за последние 7 месяцев</div></div></div>
-  <div class="admin-stats-row">${[{val:'850K',lbl:'Просмотров за июль',sc:'var(--primary)',tr:'▲ +37%'},{val:'$85',lbl:'Выплачено за июль',sc:'var(--success)',tr:'▲ +37%'},{val:'47',lbl:'Новых авторов',sc:'var(--warning)',tr:'▲ +12%'},{val:'156',lbl:'Видео одобрено',sc:'var(--text2)',tr:'▲ +28%'}].map(s=>`<div class="admin-stat-card" style="--sc:${s.sc}"><div class="admin-stat-val" style="color:${s.sc}">${s.val}</div><div class="admin-stat-lbl">${s.lbl}</div><div class="admin-stat-trend" style="color:var(--success)">${s.tr}</div></div>`).join('')}</div>
-  <div class="chart-grid">
-    <div class="chart-card"><div class="chart-title">📈 Просмотры (тыс.)</div><div class="bar-chart">${vBars}</div></div>
-    <div class="chart-card"><div class="chart-title">💰 Выплаты ($)</div><div class="bar-chart">${pBars}</div></div>
-    <div class="chart-card"><div class="chart-title">🎯 По платформам</div><div class="donut-wrap"><svg class="donut-svg" width="100" height="100" viewBox="0 0 100 100">${slices}</svg><div class="donut-legend">${plats.map(p=>`<div class="donut-item"><div class="donut-dot" style="background:${p.c}"></div><span class="donut-name">${p.lbl}</span><span class="donut-pct">${p.pct}%</span></div>`).join('')}</div></div></div>
-    <div class="chart-card"><div class="chart-title">🏆 Топ авторы</div>${A_USERS_ADM.sort((a,b)=>b.earned-a.earned).slice(0,4).map((u,i)=>`<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px"><div style="width:20px;font-family:var(--font);font-size:12px;font-weight:800;color:var(--text3);text-align:center">${i+1}</div><div style="width:28px;height:28px;border-radius:8px;background:var(--grad);display:flex;align-items:center;justify-content:center;color:#fff;font-family:var(--font);font-weight:800;font-size:12px;flex-shrink:0">${u.name[0]}</div><div style="flex:1;min-width:0"><div style="font-family:var(--font);font-size:13px;font-weight:700">${u.name}</div><div style="font-size:11px;color:var(--text3)">${fmtNum(u.views)} просм.</div></div><div style="font-family:var(--font);font-weight:800;color:var(--success);font-size:14px">$${u.earned.toFixed(0)}</div></div>`).join('')}</div>
-  </div>`;
-}
-
-/* Scroll animations */
-const observer = new IntersectionObserver((entries) => {
-  entries.forEach(entry => { if (entry.isIntersecting) { entry.target.style.opacity='1'; entry.target.style.transform='translateY(0)'; }});
-}, { threshold: 0.1 });
-document.querySelectorAll('.step-card, .platform-pill').forEach(el => {
-  el.style.opacity='0'; el.style.transform='translateY(24px)';
-  el.style.transition='opacity .5s ease, transform .5s ease';
-  observer.observe(el);
-});
-</script>
-</body>
-</html>
